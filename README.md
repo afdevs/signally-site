@@ -25,7 +25,7 @@ npm run dev               # http://localhost:4322
 | `npm run check:links` | Vérifie le maillage interne et les liens du build |
 | `npm run check:responsive` | Planche contact du rendu mobile (nécessite le serveur démarré) |
 | `npm run check:mail` | Teste la configuration d'envoi (`-- --send` pour un envoi réel) |
-| `npm run deploy` | Pull, install, build, (re)démarrage PM2 |
+| `npm run deploy` | Déploie : build, redémarrage PM2, vérification, retour arrière |
 
 ---
 
@@ -232,21 +232,47 @@ pm2 delete signally-site
 ### 4. Déployer une nouvelle version
 
 ```bash
-npm run deploy
+npm run deploy                       # récupère, construit, redémarre, vérifie
+npm run deploy -- --no-pull          # déploie le code déjà présent
+npm run deploy -- --no-install       # saute npm ci si les dépendances n'ont pas bougé
 ```
 
-`scripts/deploy.sh` enchaîne quatre étapes : `git pull`, `npm ci`, build, puis démarrage ou
-redémarrage PM2 selon que le process existe déjà. `set -e` interrompt à la première erreur : si
-le build échoue, PM2 n'est pas redémarré et le site reste en ligne sur la version précédente.
+`scripts/deploy.sh` enchaîne les étapes dans l'ordre qui préserve le service :
 
-L'étape de build n'est pas optionnelle. Sans elle, PM2 repartirait sur le `dist/` de la version
-précédente et le déploiement n'aurait aucun effet visible.
+1. **Contrôles préalables** — node, npm et pm2 présents, Node 18+, `.env` complet
+   (`MAILER_DSN`, `MAIL_FROM`, `MAIL_TO`) et correctement restreint. Le port de la vérification
+   est lu dans `ecosystem.config.cjs`, jamais codé en dur.
+2. **`git pull --ff-only`** — refusé si l'arbre de travail est modifié, pour ne jamais déployer
+   un état local non versionné.
+3. **`npm ci`**, puis **build**. La version en ligne est sauvegardée avant compilation.
+4. **Redémarrage PM2** — uniquement si le build a réussi.
+5. **Vérification de santé** — jusqu'à 15 tentatives : HTTP 200 sur `/` *et* process `online`.
+   Puis deux contrôles informatifs, `/contact` et une URL inconnue attendue en 404.
 
-Équivalent manuel :
+Le build a lieu **avant** toute interruption : une compilation qui échoue laisse le site en ligne
+sur la version précédente, et le script sort en code 1 sans avoir touché à PM2.
+
+Si la vérification de santé échoue après redémarrage, le script **restaure automatiquement** la
+version précédente, relance PM2, revérifie, et signale le résultat réel de cette restauration
+plutôt que de conclure au succès.
+
+Le déploiement manuel reste possible :
 
 ```bash
 git pull && npm ci && npm run build && pm2 restart signally-site --update-env
 ```
+
+**Une seule instance, en mode `fork`.** C'est délibéré : la limitation de débit du formulaire
+(`src/lib/rate-limit.ts`) compte les requêtes en mémoire de processus. En mode `cluster` avec
+quatre instances, chacune tiendrait son propre compteur et la limite réelle serait quatre fois
+plus permissive. Le passage en cluster suppose d'abord un compteur partagé (Redis).
+
+**Chargement des secrets.** `src/lib/mail.ts` importe `dotenv/config` et PM2 fixe `cwd` sur le
+dossier de l'application : un `.env` placé à la racine est donc lu automatiquement. Les variables
+d'environnement réelles du serveur restent prioritaires — `dotenv` n'écrase jamais une variable
+déjà définie. Aucun secret ne figure dans `ecosystem.config.cjs`, qui est versionné.
+
+Les journaux sont écrits dans `logs/`, ignoré par git.
 
 ### 5. Reverse proxy
 
