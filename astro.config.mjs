@@ -13,6 +13,15 @@ export default defineConfig({
   // `export const prerender = false`, which is why an adapter is still needed.
   output: 'static',
   adapter: node({ mode: 'standalone' }),
+  /**
+   * 4322, et non le 4321 par défaut d'Astro : ce port est déjà occupé en
+   * local par l'application Signally (v2-app). La variable PORT reste
+   * prioritaire, ce qui laisse l'hébergeur imposer le sien.
+   */
+  server: {
+    port: Number(process.env.PORT ?? 4322),
+    host: process.env.HOST ?? false,
+  },
   integrations: [
     mdx(),
     sitemap({

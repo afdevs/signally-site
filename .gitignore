@@ -13,6 +13,9 @@ npm-debug.log*
 # Copie locale du prototype Claude Design, source de la conversion.
 .design-src/
 
+# Journaux PM2.
+logs/
+
 # Planches contact produites par `npm run check:responsive`.
 # Barre oblique initiale : n'ignore que ce dossier-ci, surtout pas
 # public/screenshots/, qui accueille les captures de l'application.

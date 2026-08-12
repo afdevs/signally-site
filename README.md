@@ -13,7 +13,7 @@ contact qui envoie réellement vers `contacts@signally.io`.
 ```bash
 npm install
 cp .env.example .env      # renseigner les identifiants SMTP
-npm run dev               # http://localhost:4321
+npm run dev               # http://localhost:4322
 ```
 
 | Commande | Effet |
@@ -48,7 +48,8 @@ src/
   lib/          pricing.ts, mail.ts, contact-schema.ts, rate-limit.ts
   pages/        les 13 routes + /api/contact
   styles/       tokens.css, global.css
-scripts/        check-links.mjs, check-responsive.mjs
+scripts/        check-links.mjs, check-responsive.mjs, check-mail.mjs
+ecosystem.config.cjs   configuration PM2
 ```
 
 ### Routes
@@ -114,10 +115,13 @@ URL de prévisualisation ; aucun e-mail réel n'est délivré.
 
 ### Chargement des variables
 
-`npm run preview` et `npm run start` utilisent `node --env-file-if-exists=.env` : le serveur Node
-issu du build lit `process.env` et **ne charge pas `.env` de lui-même**. En production, fournissez
-les variables par l'environnement réel (systemd, Docker, secrets du fournisseur) plutôt que par un
-fichier déposé sur le serveur.
+`src/lib/mail.ts` importe `dotenv/config` : un fichier `.env` présent dans le répertoire de
+travail est donc chargé au démarrage, y compris sous PM2, qui fixe `cwd` sur le dossier de
+l'application. `npm run preview` ajoute par ailleurs `--env-file-if-exists=.env`.
+
+`dotenv` n'écrase jamais une variable déjà définie : les vraies variables d'environnement du
+serveur restent prioritaires sur le fichier. En production, préférez-les quand votre hébergeur
+propose un gestionnaire de secrets ; sinon, un `.env` en `chmod 600` à la racine convient.
 
 ### Comportements attendus
 
@@ -173,63 +177,74 @@ Les deux sont nécessaires : `dist/client/` seul ne saurait pas envoyer le formu
 ```bash
 NODE_ENV=production \
 HOST=0.0.0.0 \
-PORT=4321 \
+PORT=4322 \
 MAILER_DSN='sendgrid://VOTRE_CLE@default' \
 MAIL_FROM='Signally <no-reply@signally.io>' \
 MAIL_TO='contacts@signally.io' \
 node ./dist/server/entry.mjs
 ```
 
-Les variables doivent venir de l'environnement réel — pas d'un fichier `.env` déposé sur le
-serveur. `dotenv` n'écrase jamais une variable déjà définie : les valeurs injectées par
-l'hébergeur restent prioritaires.
+Un `.env` à la racine fait aussi l'affaire (voir « Chargement des variables »). C'est la voie
+retenue avec PM2, décrite plus bas.
 
-`PORT` est facultatif : à défaut, le serveur Node écoute sur 4321, le port par défaut d'Astro.
+`PORT` est facultatif : à défaut, le port 4322 défini dans `astro.config.mjs` s'applique, en
+développement comme en production.
 
-> En développement local, 4321 peut déjà être pris par un autre projet Signally (`v2-app` tourne
-> sur ce port). Les deux cohabitent tant que chacun s'en tient à une pile différente — `v2-app`
-> n'écoute que sur `[::1]`, ce site sur `127.0.0.1` avec `HOST=127.0.0.1`. Au moindre doute,
-> imposez un port explicite : `PORT=4400 npm run preview`.
+> 4322 et non le 4321 par défaut d'Astro : ce dernier est déjà occupé par l'application Signally
+> (`v2-app`, lancée en `vite preview --port 4321`). Les deux services peuvent donc tourner
+> simultanément sur la même machine sans se marcher dessus.
 
-### 3. Service systemd
+### 3. PM2
 
-```ini
-# /etc/systemd/system/signally-site.service
-[Unit]
-Description=Site marketing Signally
-After=network-online.target
-Wants=network-online.target
-
-[Service]
-Type=simple
-User=www-data
-WorkingDirectory=/srv/signally-site
-ExecStart=/usr/bin/node ./dist/server/entry.mjs
-Restart=always
-RestartSec=5
-
-Environment=NODE_ENV=production
-Environment=HOST=127.0.0.1
-Environment=PORT=4321
-# Secrets hors du fichier d'unité : 0600, propriété root.
-EnvironmentFile=/etc/signally-site.env
-
-# Durcissement
-NoNewPrivileges=true
-PrivateTmp=true
-ProtectSystem=strict
-ProtectHome=true
-
-[Install]
-WantedBy=multi-user.target
-```
+Le dépôt fournit `ecosystem.config.cjs`. L'extension `.cjs` est volontaire : `package.json`
+déclare `type: module`, un fichier `.js` serait lu comme un module ES et PM2 refuserait de le
+charger.
 
 ```bash
-sudo install -m 600 -o root .env /etc/signally-site.env   # MAILER_DSN, MAIL_FROM, MAIL_TO
-sudo systemctl daemon-reload
-sudo systemctl enable --now signally-site
-journalctl -u signally-site -f          # les lignes [mail] s'y trouvent
+cd /srv/signally-site
+npm ci
+npm run build
+
+# Secrets : fichier .env à la racine, lisible du seul utilisateur du service.
+cat > .env <<'ENV'
+MAILER_DSN=sendgrid://VOTRE_CLE@default
+MAIL_FROM="Signally <no-reply@signally.io>"
+MAIL_TO=contacts@signally.io
+ENV
+chmod 600 .env
+
+pm2 start ecosystem.config.cjs --env production
+pm2 save          # fige la liste des process à relancer au démarrage
+pm2 startup       # imprime la commande à exécuter en root
 ```
+
+Exploitation courante :
+
+```bash
+pm2 status
+pm2 logs signally-site            # les lignes [mail] y apparaissent
+pm2 restart signally-site --update-env
+pm2 stop signally-site
+pm2 delete signally-site
+```
+
+Déploiement d'une nouvelle version :
+
+```bash
+git pull && npm ci && npm run build && pm2 restart signally-site --update-env
+```
+
+**Une seule instance, en mode `fork`.** C'est délibéré : la limitation de débit du formulaire
+(`src/lib/rate-limit.ts`) compte les requêtes en mémoire de processus. En mode `cluster` avec
+quatre instances, chacune tiendrait son propre compteur et la limite réelle serait quatre fois
+plus permissive. Le passage en cluster suppose d'abord un compteur partagé (Redis).
+
+**Chargement des secrets.** `src/lib/mail.ts` importe `dotenv/config` et PM2 fixe `cwd` sur le
+dossier de l'application : un `.env` placé à la racine est donc lu automatiquement. Les variables
+d'environnement réelles du serveur restent prioritaires — `dotenv` n'écrase jamais une variable
+déjà définie. Aucun secret ne figure dans `ecosystem.config.cjs`, qui est versionné.
+
+Les journaux sont écrits dans `logs/`, ignoré par git.
 
 ### 4. Reverse proxy
 
@@ -241,7 +256,7 @@ server {
   # … certificats …
 
   location / {
-    proxy_pass http://127.0.0.1:4321;
+    proxy_pass http://127.0.0.1:4322;
 
     # ⚠ Indispensable. Astro compare l'en-tête Origin à l'origine calculée
     # de la requête : sans ces en-têtes, les envois du formulaire sans
