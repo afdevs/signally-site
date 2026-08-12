@@ -11,12 +11,16 @@
 # Après redémarrage, une vérification de santé décide de garder la nouvelle
 # version ou de revenir automatiquement à la précédente.
 #
+# Portabilité : certains hébergements (Plesk et assimilés) exécutent le
+# script dans un chroot minimal, sans curl, id, stat ni parfois cp. Ce
+# script ne dépend donc que de bash, node, npm, pm2 et git — les
+# opérations habituellement confiées aux coreutils passent par node.
+#
 set -euo pipefail
 
-# Certains hébergements lancent `npm run` avec un PATH réduit au dossier
-# binaire de Node : les outils de base (stat, id, find…) y sont absents.
-# On rétablit les emplacements standards, en les ajoutant APRÈS le PATH
-# existant pour ne pas masquer la version de node/pm2 déjà choisie.
+# PATH réduit au dossier binaire de Node sur certains hébergements : on
+# rétablit les emplacements standards, en les ajoutant APRÈS l'existant
+# pour ne pas masquer la version de node/pm2 déjà sélectionnée.
 for _dir in /usr/local/sbin /usr/local/bin /usr/sbin /usr/bin /sbin /bin; do
   case ":$PATH:" in
     *":$_dir:"*) ;;
@@ -35,32 +39,35 @@ HEALTH_DELAY=2
 DO_PULL=1
 DO_INSTALL=1
 
+usage() {
+  printf '%s\n' \
+    'Déploiement du site marketing Signally.' \
+    '' \
+    '  ./scripts/deploy.sh              récupère, construit, redémarre, vérifie' \
+    '  ./scripts/deploy.sh --no-pull    déploie le code déjà présent' \
+    '  ./scripts/deploy.sh --no-install saute npm ci (dépendances inchangées)' \
+    '' \
+    'Le build précède toute interruption : une compilation en échec laisse' \
+    'le site en ligne sur la version précédente. Après redémarrage, une' \
+    'vérification de santé déclenche au besoin un retour arrière.'
+}
+
 for arg in "$@"; do
   case "$arg" in
     --no-pull)    DO_PULL=0 ;;
     --no-install) DO_INSTALL=0 ;;
-    -h|--help)
-      cat <<'USAGE'
-Déploiement du site marketing Signally.
-
-  ./scripts/deploy.sh              récupère, construit, redémarre, vérifie
-  ./scripts/deploy.sh --no-pull    déploie le code déjà présent
-  ./scripts/deploy.sh --no-install saute npm ci (dépendances inchangées)
-
-Le build est fait AVANT toute interruption du service : si la compilation
-échoue, le site en production continue de tourner sur l'ancienne version.
-Après redémarrage, une vérification de santé décide de garder la nouvelle
-version ou de revenir automatiquement à la précédente.
-USAGE
-      exit 0 ;;
-    *) echo "Option inconnue : $arg" >&2; exit 2 ;;
+    -h|--help)    usage; exit 0 ;;
+    *) printf 'Option inconnue : %s\n' "$arg" >&2; exit 2 ;;
   esac
 done
 
-# Toujours travailler depuis la racine du dépôt, quel que soit le cwd
-# de l'appelant (cron, CI, session ssh).
-cd "$(dirname "$0")/.."
-ROOT="$(pwd)"
+# Racine du dépôt, sans dépendre de `dirname`.
+_self="${BASH_SOURCE[0]}"
+_dir="${_self%/*}"
+[ "$_dir" = "$_self" ] && _dir='.'
+cd "$_dir/.."
+ROOT="$PWD"
+unset _self _dir
 
 # ---------------------------------------------------------------------------
 # Affichage
@@ -77,16 +84,54 @@ warn() { printf '  %s!%s %s\n' "$Y" "$N" "$1"; }
 die()  { printf '\n  %s✗ %s%s\n\n' "$R" "$1" "$N" >&2; exit 1; }
 
 # ---------------------------------------------------------------------------
+# Portabilité : équivalents node des coreutils absents des chroots minimaux
+# ---------------------------------------------------------------------------
+
+# Code de statut HTTP d'une URL, ou 000 si injoignable. Remplace curl.
+http_status() {
+  node -e '
+    const http = require("http");
+    const req = http.get(process.argv[1], { timeout: 5000 }, (res) => {
+      process.stdout.write(String(res.statusCode));
+      res.resume();
+    });
+    req.on("timeout", () => { req.destroy(); });
+    req.on("error", () => { process.stdout.write("000"); });
+  ' "$1" 2>/dev/null || printf '000'
+}
+
+# Pause bloquante. `sleep` manque parfois ; Atomics.wait prend le relais.
+pause() {
+  if command -v sleep >/dev/null 2>&1; then
+    sleep "$1"
+  else
+    node -e 'Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, Number(process.argv[1]) * 1000)' "$1"
+  fi
+}
+
+fs_rm()   { node -e 'require("fs").rmSync(process.argv[1], {recursive:true, force:true})' "$1"; }
+fs_copy() { node -e 'require("fs").cpSync(process.argv[1], process.argv[2], {recursive:true})' "$1" "$2"; }
+fs_move() { node -e 'require("fs").renameSync(process.argv[1], process.argv[2])' "$1" "$2"; }
+
+# Présence d'une clé dans un fichier d'environnement. Remplace grep.
+env_has_key() {
+  node -e '
+    const [file, key] = process.argv.slice(1);
+    const re = new RegExp("^\\s*" + key + "\\s*=", "m");
+    process.exit(re.test(require("fs").readFileSync(file, "utf8")) ? 0 : 1);
+  ' "$1" "$2" 2>/dev/null
+}
+
+# ---------------------------------------------------------------------------
 # Contrôles préalables
 # ---------------------------------------------------------------------------
 step 'Contrôles préalables'
 
-# $EUID est une variable de bash : contrairement à `id -u`, elle reste
-# disponible même avec un PATH amputé.
+# $EUID est une variable de bash : disponible même sans `id`.
 [ "${EUID:-1}" -eq 0 ] && warn 'exécuté en root — préférez le compte de service'
 
 MISSING=''
-for tool in node npm pm2 git curl; do
+for tool in node npm pm2 git; do
   command -v "$tool" >/dev/null 2>&1 || MISSING="$MISSING $tool"
 done
 if [ -n "$MISSING" ]; then
@@ -97,38 +142,33 @@ fi
 
 NODE_MAJOR="$(node -p 'process.versions.node.split(".")[0]')"
 [ "$NODE_MAJOR" -ge 18 ] || die "Node 18+ requis, trouvé $(node -v)"
-# pm2 -v peut précéder le numéro de lignes de diagnostic : on garde la
-# dernière, sans dépendre de `tail`.
 PM2_VER="$(pm2 -v 2>/dev/null || true)"
 PM2_VER="${PM2_VER##*$'\n'}"
 ok "node $(node -v), pm2 ${PM2_VER:-?}"
 
 [ -f "$ROOT/.env" ] || die '.env absent — MAILER_DSN, MAIL_FROM et MAIL_TO sont requis'
 for key in MAILER_DSN MAIL_FROM MAIL_TO; do
-  grep -qE "^${key}=" "$ROOT/.env" || die ".env : $key manquant"
+  env_has_key "$ROOT/.env" "$key" || die ".env : $key manquant"
 done
 
-# Un .env lisible par tous divulgue la clé d'API. Contrôle indicatif :
-# `stat` n'a pas la même syntaxe partout et peut manquer, donc on passe
-# par node, toujours présent, et on n'échoue jamais là-dessus.
-PERM="$(node -e "
-  try { process.stdout.write((require('fs').statSync('$ROOT/.env').mode & 0o777).toString(8)); }
-  catch { process.stdout.write(''); }
-" 2>/dev/null || true)"
+# Un .env lisible par tous divulgue la clé d'API. Contrôle indicatif.
+PERM="$(node -e '
+  try { process.stdout.write((require("fs").statSync(process.argv[1]).mode & 0o777).toString(8)); }
+  catch { process.stdout.write(""); }
+' "$ROOT/.env" 2>/dev/null || true)"
 case "$PERM" in
   600|400) ok ".env présent (mode $PERM)" ;;
   '')      ok '.env présent' ;;
   *)       warn ".env en mode $PERM — resserrez avec : chmod 600 .env" ;;
 esac
 
-# Port : lu depuis la configuration PM2, pour que la vérification de santé
-# interroge bien le port réellement utilisé.
-PORT="${PORT:-$(node -e "
+# Port lu dans la configuration PM2, pour interroger le bon service.
+PORT="${PORT:-$(node -e '
   try {
-    const a = require('$ROOT/ecosystem.config.cjs').apps[0];
+    const a = require(process.argv[1]).apps[0];
     process.stdout.write(String((a.env_production ?? a.env).PORT));
-  } catch { process.stdout.write('4322'); }
-")}"
+  } catch { process.stdout.write("4322"); }
+' "$ROOT/ecosystem.config.cjs")}"
 ok "port cible : $PORT"
 
 # ---------------------------------------------------------------------------
@@ -163,27 +203,29 @@ fi
 # ---------------------------------------------------------------------------
 step 'Build'
 
-# Sauvegarde de la version en ligne, pour pouvoir y revenir.
-rm -rf "$ROOT/.dist-prev"
-[ -d "$ROOT/dist" ] && cp -R "$ROOT/dist" "$ROOT/.dist-prev" && ok 'version précédente sauvegardée'
+fs_rm "$ROOT/.dist-prev"
+if [ -d "$ROOT/dist" ]; then
+  fs_copy "$ROOT/dist" "$ROOT/.dist-prev"
+  ok 'version précédente sauvegardée'
+fi
 
 if ! NODE_ENV=production npm run build; then
   # dist/ peut être à moitié écrit : on restaure avant de sortir.
   if [ -d "$ROOT/.dist-prev" ]; then
-    rm -rf "$ROOT/dist"; mv "$ROOT/.dist-prev" "$ROOT/dist"
+    fs_rm "$ROOT/dist"
+    fs_move "$ROOT/.dist-prev" "$ROOT/dist"
     warn 'build échoué — version précédente restaurée, service intact'
   fi
   die 'build échoué, aucun redémarrage effectué'
 fi
 
 [ -f "$ROOT/dist/server/entry.mjs" ] || die 'dist/server/entry.mjs absent après build'
-# Comptage via node plutôt que find|wc|tr : moins de dépendances externes.
-PAGES="$(node -e "
-  const {readdirSync} = require('fs');
+PAGES="$(node -e '
+  const {readdirSync} = require("fs");
   const walk = d => readdirSync(d, {withFileTypes:true}).reduce((n,e) =>
-    n + (e.isDirectory() ? walk(d+'/'+e.name) : e.name.endsWith('.html') ? 1 : 0), 0);
-  process.stdout.write(String(walk('$ROOT/dist/client')));
-" 2>/dev/null || echo '?')"
+    n + (e.isDirectory() ? walk(d + "/" + e.name) : e.name.endsWith(".html") ? 1 : 0), 0);
+  process.stdout.write(String(walk(process.argv[1])));
+' "$ROOT/dist/client" 2>/dev/null || printf '?')"
 ok "$PAGES pages statiques + serveur Node"
 
 # ---------------------------------------------------------------------------
@@ -204,37 +246,47 @@ fi
 # ---------------------------------------------------------------------------
 step 'Vérification de santé'
 
-# Boucle arithmétique bash plutôt que `seq`, absent de certains PATH.
-HEALTHY=0
-for (( i = 1; i <= HEALTH_RETRIES; i++ )); do
-  CODE="$(curl -s -o /dev/null -w '%{http_code}' --max-time 5 \
-    "http://${HEALTH_HOST}:${PORT}${HEALTH_PATH}" || true)"
-  STATUS="$(pm2 jlist 2>/dev/null | node -e "
-    let s=''; process.stdin.on('data',d=>s+=d).on('end',()=>{
-      try { const a=JSON.parse(s).find(x=>x.name==='$APP_NAME');
-        process.stdout.write(a ? a.pm2_env.status : 'absent');
-      } catch { process.stdout.write('inconnu'); }
-    });" || echo inconnu)"
+pm2_status() {
+  pm2 jlist 2>/dev/null | node -e '
+    let s = "";
+    process.stdin.on("data", d => s += d).on("end", () => {
+      try {
+        const a = JSON.parse(s).find(x => x.name === process.argv[1]);
+        process.stdout.write(a ? a.pm2_env.status : "absent");
+      } catch { process.stdout.write("inconnu"); }
+    });
+  ' "$APP_NAME" 2>/dev/null || printf 'inconnu'
+}
 
+HEALTHY=0
+CODE=''
+STATUS=''
+for (( i = 1; i <= HEALTH_RETRIES; i++ )); do
+  CODE="$(http_status "http://${HEALTH_HOST}:${PORT}${HEALTH_PATH}")"
+  STATUS="$(pm2_status)"
   if [ "$CODE" = "200" ] && [ "$STATUS" = "online" ]; then
     HEALTHY=1
     ok "HTTP 200 sur :$PORT, process online (tentative $i)"
     break
   fi
-  sleep "$HEALTH_DELAY"
+  pause "$HEALTH_DELAY"
 done
 
 if [ "$HEALTHY" -ne 1 ]; then
-  printf '\n  %s✗ échec de la vérification (HTTP %s, process %s)%s\n' "$R" "${CODE:-—}" "${STATUS:-—}" "$N" >&2
+  printf '\n  %s✗ échec de la vérification (HTTP %s, process %s)%s\n' \
+    "$R" "${CODE:-—}" "${STATUS:-—}" "$N" >&2
   if [ -d "$ROOT/.dist-prev" ]; then
     step 'Retour à la version précédente'
-    rm -rf "$ROOT/dist"; mv "$ROOT/.dist-prev" "$ROOT/dist"
+    fs_rm "$ROOT/dist"
+    fs_move "$ROOT/.dist-prev" "$ROOT/dist"
     pm2 restart "$APP_NAME" --update-env >/dev/null || true
-    sleep 3
-    BACK="$(curl -s -o /dev/null -w '%{http_code}' --max-time 5 \
-      "http://${HEALTH_HOST}:${PORT}${HEALTH_PATH}" || true)"
-    [ "$BACK" = "200" ] && ok 'version précédente restaurée et fonctionnelle' \
-                        || warn "restauration effectuée mais HTTP $BACK — voir : pm2 logs $APP_NAME"
+    pause 3
+    BACK="$(http_status "http://${HEALTH_HOST}:${PORT}${HEALTH_PATH}")"
+    if [ "$BACK" = "200" ]; then
+      ok 'version précédente restaurée et fonctionnelle'
+    else
+      warn "restauration effectuée mais HTTP $BACK — voir : pm2 logs $APP_NAME"
+    fi
   else
     warn 'aucune version précédente à restaurer'
   fi
@@ -242,21 +294,19 @@ if [ "$HEALTHY" -ne 1 ]; then
   exit 1
 fi
 
-# Vérifications secondaires : informatives, elles ne font pas échouer le
+# Contrôles secondaires : informatifs, ils ne font pas échouer le
 # déploiement puisque le service répond déjà.
-NOT_FOUND="$(curl -s -o /dev/null -w '%{http_code}' --max-time 5 \
-  "http://${HEALTH_HOST}:${PORT}/url-inexistante-$$" || true)"
-[ "$NOT_FOUND" = "404" ] && ok 'page introuvable : 404 correct' \
-                         || warn "URL inconnue → HTTP $NOT_FOUND (404 attendu)"
+NOT_FOUND="$(http_status "http://${HEALTH_HOST}:${PORT}/url-inexistante-$$")"
+if [ "$NOT_FOUND" = "404" ]; then ok 'page introuvable : 404 correct'
+else warn "URL inconnue → HTTP $NOT_FOUND (404 attendu)"; fi
 
-CONTACT="$(curl -s -o /dev/null -w '%{http_code}' --max-time 5 \
-  "http://${HEALTH_HOST}:${PORT}/contact" || true)"
-[ "$CONTACT" = "200" ] && ok 'page contact servie' \
-                       || warn "/contact → HTTP $CONTACT"
+CONTACT="$(http_status "http://${HEALTH_HOST}:${PORT}/contact")"
+if [ "$CONTACT" = "200" ]; then ok 'page contact servie'
+else warn "/contact → HTTP $CONTACT"; fi
 
 # ---------------------------------------------------------------------------
 step 'Terminé'
-rm -rf "$ROOT/.dist-prev"
+fs_rm "$ROOT/.dist-prev"
 pm2 save >/dev/null 2>&1 && ok 'liste PM2 enregistrée'
 printf '  %s%s en ligne sur le port %s — révision %s%s\n\n' \
   "$G" "$APP_NAME" "$PORT" "$(git rev-parse --short HEAD)" "$N"
