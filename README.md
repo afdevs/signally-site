@@ -153,19 +153,126 @@ alors par une redirection 303 vers `/contact?envoye=1` ou `/contact?erreur=…`.
 
 ## Déploiement
 
-Build puis exécution du serveur Node :
+### 1. Construire
 
 ```bash
 npm ci
 npm run build
-NODE_ENV=production HOST=0.0.0.0 PORT=3000 node ./dist/server/entry.mjs
 ```
 
-`dist/client/` contient les fichiers statiques, `dist/server/` le point d'entrée Node. Un reverse
-proxy en frontal doit servir le TLS et transmettre les en-têtes ci-dessus.
+Le build produit deux dossiers :
+
+- `dist/client/` — 52 pages statiques, CSS, polices, images (~3,8 Mo) ;
+- `dist/server/entry.mjs` — le serveur Node, qui sert ces fichiers **et** rend à la demande les
+  deux seules routes dynamiques : `/contact` et `POST /api/contact`.
+
+Les deux sont nécessaires : `dist/client/` seul ne saurait pas envoyer le formulaire.
+
+### 2. Lancer
+
+```bash
+NODE_ENV=production \
+HOST=0.0.0.0 \
+PORT=3000 \
+MAILER_DSN='sendgrid://VOTRE_CLE@default' \
+MAIL_FROM='Signally <no-reply@signally.io>' \
+MAIL_TO='contacts@signally.io' \
+node ./dist/server/entry.mjs
+```
+
+Les variables doivent venir de l'environnement réel — pas d'un fichier `.env` déposé sur le
+serveur. `dotenv` n'écrase jamais une variable déjà définie : les valeurs injectées par
+l'hébergeur restent prioritaires.
+
+`PORT` est facultatif : à défaut, le port 3000 défini dans `astro.config.mjs` s'applique.
+
+### 3. Service systemd
+
+```ini
+# /etc/systemd/system/signally-site.service
+[Unit]
+Description=Site marketing Signally
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=www-data
+WorkingDirectory=/srv/signally-site
+ExecStart=/usr/bin/node ./dist/server/entry.mjs
+Restart=always
+RestartSec=5
+
+Environment=NODE_ENV=production
+Environment=HOST=127.0.0.1
+Environment=PORT=3000
+# Secrets hors du fichier d'unité : 0600, propriété root.
+EnvironmentFile=/etc/signally-site.env
+
+# Durcissement
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+
+[Install]
+WantedBy=multi-user.target
+```
+
+```bash
+sudo install -m 600 -o root .env /etc/signally-site.env   # MAILER_DSN, MAIL_FROM, MAIL_TO
+sudo systemctl daemon-reload
+sudo systemctl enable --now signally-site
+journalctl -u signally-site -f          # les lignes [mail] s'y trouvent
+```
+
+### 4. Reverse proxy
+
+```nginx
+server {
+  listen 443 ssl http2;
+  server_name www.signally.io;
+
+  # … certificats …
+
+  location / {
+    proxy_pass http://127.0.0.1:3000;
+
+    # ⚠ Indispensable. Astro compare l'en-tête Origin à l'origine calculée
+    # de la requête : sans ces en-têtes, les envois du formulaire sans
+    # JavaScript sont rejetés en 403 (protection CSRF).
+    proxy_set_header Host              $host;
+    proxy_set_header X-Forwarded-Host  $host;
+    proxy_set_header X-Forwarded-Proto $scheme;
+    # Sert aussi à la limitation de débit par IP du formulaire.
+    proxy_set_header X-Forwarded-For   $proxy_add_x_forwarded_for;
+  }
+}
+```
+
+### 5. Vérifier la mise en production
+
+```bash
+curl -I https://www.signally.io/                    # 200
+curl -I https://www.signally.io/nimporte-quoi       # 404
+curl -s https://www.signally.io/robots.txt
+npm run check:mail                                  # authentification SMTP
+```
+
+Puis soumettez réellement le formulaire depuis `/contact` et vérifiez la réception sur `MAIL_TO`.
+
+### Notes
 
 Ajustez `SITE_URL` dans `astro.config.mjs` si le domaine diffère de `https://www.signally.io` :
 il alimente les URL canoniques, l'Open Graph et le sitemap.
+
+La limitation de débit du formulaire est en mémoire, donc locale au processus. Derrière plusieurs
+répliques, prévoir un magasin partagé (voir `src/lib/rate-limit.ts`).
+
+Requêter l'URL littérale `/404` renvoie une erreur 500 : Astro cherche alors une route SSR pour un
+fichier qui a été prérendu. Les vraies pages introuvables, elles, renvoient bien un 404 avec la
+page `404.astro`. Sans conséquence pour les visiteurs, mais à connaître si votre supervision
+sonde ce chemin.
 
 ---
 
