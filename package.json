@@ -9,7 +9,7 @@
     "build": "astro build",
     "preview": "node --env-file-if-exists=.env ./dist/server/entry.mjs",
     "start": "node --env-file-if-exists=.env ./dist/server/entry.mjs",
-    "start:prod": "NODE_ENV=production HOST=0.0.0.0 node ./dist/server/entry.mjs",
+    "start:prod": "NODE_ENV=production HOST=127.0.0.1 node ./dist/server/entry.mjs",
     "check": "astro check",
     "check:links": "node scripts/check-links.mjs",
     "check:responsive": "node scripts/check-responsive.mjs",
