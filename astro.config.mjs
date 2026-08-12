@@ -13,15 +13,6 @@ export default defineConfig({
   // `export const prerender = false`, which is why an adapter is still needed.
   output: 'static',
   adapter: node({ mode: 'standalone' }),
-  /**
-   * Port unique pour le serveur de développement et pour le serveur Node
-   * issu du build. La variable d'environnement PORT reste prioritaire, ce
-   * qui laisse l'hébergeur imposer le sien en production.
-   */
-  server: {
-    port: Number(process.env.PORT ?? 3000),
-    host: process.env.HOST ?? false,
-  },
   integrations: [
     mdx(),
     sitemap({

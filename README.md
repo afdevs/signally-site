@@ -13,7 +13,7 @@ contact qui envoie réellement vers `contacts@signally.io`.
 ```bash
 npm install
 cp .env.example .env      # renseigner les identifiants SMTP
-npm run dev               # http://localhost:3000
+npm run dev               # http://localhost:4321
 ```
 
 | Commande | Effet |
@@ -173,7 +173,7 @@ Les deux sont nécessaires : `dist/client/` seul ne saurait pas envoyer le formu
 ```bash
 NODE_ENV=production \
 HOST=0.0.0.0 \
-PORT=3000 \
+PORT=4321 \
 MAILER_DSN='sendgrid://VOTRE_CLE@default' \
 MAIL_FROM='Signally <no-reply@signally.io>' \
 MAIL_TO='contacts@signally.io' \
@@ -184,7 +184,12 @@ Les variables doivent venir de l'environnement réel — pas d'un fichier `.env`
 serveur. `dotenv` n'écrase jamais une variable déjà définie : les valeurs injectées par
 l'hébergeur restent prioritaires.
 
-`PORT` est facultatif : à défaut, le port 3000 défini dans `astro.config.mjs` s'applique.
+`PORT` est facultatif : à défaut, le serveur Node écoute sur 4321, le port par défaut d'Astro.
+
+> En développement local, 4321 peut déjà être pris par un autre projet Signally (`v2-app` tourne
+> sur ce port). Les deux cohabitent tant que chacun s'en tient à une pile différente — `v2-app`
+> n'écoute que sur `[::1]`, ce site sur `127.0.0.1` avec `HOST=127.0.0.1`. Au moindre doute,
+> imposez un port explicite : `PORT=4400 npm run preview`.
 
 ### 3. Service systemd
 
@@ -205,7 +210,7 @@ RestartSec=5
 
 Environment=NODE_ENV=production
 Environment=HOST=127.0.0.1
-Environment=PORT=3000
+Environment=PORT=4321
 # Secrets hors du fichier d'unité : 0600, propriété root.
 EnvironmentFile=/etc/signally-site.env
 
@@ -236,7 +241,7 @@ server {
   # … certificats …
 
   location / {
-    proxy_pass http://127.0.0.1:3000;
+    proxy_pass http://127.0.0.1:4321;
 
     # ⚠ Indispensable. Astro compare l'en-tête Origin à l'origine calculée
     # de la requête : sans ces en-têtes, les envois du formulaire sans

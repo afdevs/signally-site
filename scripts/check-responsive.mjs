@@ -15,7 +15,7 @@
  * Usage :
  *   node scripts/check-responsive.mjs                 # 390 px, pages clés
  *   node scripts/check-responsive.mjs 768             # autre largeur
- *   node scripts/check-responsive.mjs 390 http://127.0.0.1:3000
+ *   node scripts/check-responsive.mjs 390 http://127.0.0.1:4321
  */
 
 import { spawn } from 'node:child_process';
@@ -24,7 +24,7 @@ import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 
 const WIDTH = Number(process.argv[2]) || 390;
-const BASE = process.argv[3] ?? `http://127.0.0.1:${process.env.PORT ?? 3000}`;
+const BASE = process.argv[3] ?? `http://127.0.0.1:${process.env.PORT ?? 4321}`;
 const CHROME =
   process.env.CHROME_PATH ??
   '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome';
