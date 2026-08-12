@@ -13,6 +13,19 @@
 #
 set -euo pipefail
 
+# Certains hébergements lancent `npm run` avec un PATH réduit au dossier
+# binaire de Node : les outils de base (stat, id, find…) y sont absents.
+# On rétablit les emplacements standards, en les ajoutant APRÈS le PATH
+# existant pour ne pas masquer la version de node/pm2 déjà choisie.
+for _dir in /usr/local/sbin /usr/local/bin /usr/sbin /usr/bin /sbin /bin; do
+  case ":$PATH:" in
+    *":$_dir:"*) ;;
+    *) [ -d "$_dir" ] && PATH="$PATH:$_dir" ;;
+  esac
+done
+export PATH
+unset _dir
+
 APP_NAME="signally-site"
 HEALTH_HOST="127.0.0.1"
 HEALTH_PATH="/"
@@ -26,7 +39,20 @@ for arg in "$@"; do
   case "$arg" in
     --no-pull)    DO_PULL=0 ;;
     --no-install) DO_INSTALL=0 ;;
-    -h|--help)    sed -n '2,12p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
+    -h|--help)
+      cat <<'USAGE'
+Déploiement du site marketing Signally.
+
+  ./scripts/deploy.sh              récupère, construit, redémarre, vérifie
+  ./scripts/deploy.sh --no-pull    déploie le code déjà présent
+  ./scripts/deploy.sh --no-install saute npm ci (dépendances inchangées)
+
+Le build est fait AVANT toute interruption du service : si la compilation
+échoue, le site en production continue de tourner sur l'ancienne version.
+Après redémarrage, une vérification de santé décide de garder la nouvelle
+version ou de revenir automatiquement à la précédente.
+USAGE
+      exit 0 ;;
     *) echo "Option inconnue : $arg" >&2; exit 2 ;;
   esac
 done
@@ -55,25 +81,44 @@ die()  { printf '\n  %s✗ %s%s\n\n' "$R" "$1" "$N" >&2; exit 1; }
 # ---------------------------------------------------------------------------
 step 'Contrôles préalables'
 
-[ "$(id -u)" -ne 0 ] || warn 'exécuté en root — préférez le compte de service'
+# $EUID est une variable de bash : contrairement à `id -u`, elle reste
+# disponible même avec un PATH amputé.
+[ "${EUID:-1}" -eq 0 ] && warn 'exécuté en root — préférez le compte de service'
 
-command -v node >/dev/null || die 'node introuvable'
-command -v npm  >/dev/null || die 'npm introuvable'
-command -v pm2  >/dev/null || die 'pm2 introuvable (npm i -g pm2)'
+MISSING=''
+for tool in node npm pm2 git curl; do
+  command -v "$tool" >/dev/null 2>&1 || MISSING="$MISSING $tool"
+done
+if [ -n "$MISSING" ]; then
+  printf '\n  %s✗ outils introuvables :%s%s\n' "$R" "$MISSING" "$N" >&2
+  printf '  PATH = %s\n\n' "$PATH" >&2
+  exit 1
+fi
 
 NODE_MAJOR="$(node -p 'process.versions.node.split(".")[0]')"
 [ "$NODE_MAJOR" -ge 18 ] || die "Node 18+ requis, trouvé $(node -v)"
-ok "node $(node -v), pm2 $(pm2 -v 2>/dev/null | tail -1)"
+# pm2 -v peut précéder le numéro de lignes de diagnostic : on garde la
+# dernière, sans dépendre de `tail`.
+PM2_VER="$(pm2 -v 2>/dev/null || true)"
+PM2_VER="${PM2_VER##*$'\n'}"
+ok "node $(node -v), pm2 ${PM2_VER:-?}"
 
 [ -f "$ROOT/.env" ] || die '.env absent — MAILER_DSN, MAIL_FROM et MAIL_TO sont requis'
 for key in MAILER_DSN MAIL_FROM MAIL_TO; do
   grep -qE "^${key}=" "$ROOT/.env" || die ".env : $key manquant"
 done
-# Un .env lisible par tous est une fuite de la clé d'API.
-PERM="$(stat -f '%Lp' "$ROOT/.env" 2>/dev/null || stat -c '%a' "$ROOT/.env")"
+
+# Un .env lisible par tous divulgue la clé d'API. Contrôle indicatif :
+# `stat` n'a pas la même syntaxe partout et peut manquer, donc on passe
+# par node, toujours présent, et on n'échoue jamais là-dessus.
+PERM="$(node -e "
+  try { process.stdout.write((require('fs').statSync('$ROOT/.env').mode & 0o777).toString(8)); }
+  catch { process.stdout.write(''); }
+" 2>/dev/null || true)"
 case "$PERM" in
   600|400) ok ".env présent (mode $PERM)" ;;
-  *) warn ".env en mode $PERM — resserrez avec : chmod 600 .env" ;;
+  '')      ok '.env présent' ;;
+  *)       warn ".env en mode $PERM — resserrez avec : chmod 600 .env" ;;
 esac
 
 # Port : lu depuis la configuration PM2, pour que la vérification de santé
@@ -131,8 +176,14 @@ if ! NODE_ENV=production npm run build; then
   die 'build échoué, aucun redémarrage effectué'
 fi
 
-PAGES="$(find "$ROOT/dist/client" -name '*.html' | wc -l | tr -d ' ')"
 [ -f "$ROOT/dist/server/entry.mjs" ] || die 'dist/server/entry.mjs absent après build'
+# Comptage via node plutôt que find|wc|tr : moins de dépendances externes.
+PAGES="$(node -e "
+  const {readdirSync} = require('fs');
+  const walk = d => readdirSync(d, {withFileTypes:true}).reduce((n,e) =>
+    n + (e.isDirectory() ? walk(d+'/'+e.name) : e.name.endsWith('.html') ? 1 : 0), 0);
+  process.stdout.write(String(walk('$ROOT/dist/client')));
+" 2>/dev/null || echo '?')"
 ok "$PAGES pages statiques + serveur Node"
 
 # ---------------------------------------------------------------------------
@@ -153,8 +204,9 @@ fi
 # ---------------------------------------------------------------------------
 step 'Vérification de santé'
 
+# Boucle arithmétique bash plutôt que `seq`, absent de certains PATH.
 HEALTHY=0
-for i in $(seq 1 "$HEALTH_RETRIES"); do
+for (( i = 1; i <= HEALTH_RETRIES; i++ )); do
   CODE="$(curl -s -o /dev/null -w '%{http_code}' --max-time 5 \
     "http://${HEALTH_HOST}:${PORT}${HEALTH_PATH}" || true)"
   STATUS="$(pm2 jlist 2>/dev/null | node -e "
