@@ -1,0 +1,85 @@
+---
+type Step = { title: string; text: string };
+
+interface Props {
+  tag: string;
+  steps: Step[];
+  /** `dark` = colonne « côté collaborateur » sur fond encre. */
+  tone?: 'light' | 'dark';
+}
+
+const { tag, steps, tone = 'light' } = Astro.props;
+---
+
+<div class:list={['journey', tone === 'dark' && 'journey--dark', tone === 'dark' && 'on-dark']}>
+  <div class="journey__tag">{tag}</div>
+  <ol class="journey__steps">
+    {steps.map((step, i) => (
+      <li class="journey__step">
+        <span class="journey__num">{String(i + 1).padStart(2, '0')}</span>
+        <div>
+          <div class="journey__title">{step.title}</div>
+          <p class="journey__text">{step.text}</p>
+        </div>
+      </li>
+    ))}
+  </ol>
+</div>
+
+<style>
+  .journey {
+    border: 1px solid var(--line);
+    border-radius: var(--r-xl);
+    padding: 32px;
+    background: var(--soft);
+  }
+
+  .journey--dark {
+    border-color: var(--ink);
+    background: var(--ink);
+    color: var(--white);
+  }
+
+  .journey__tag {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    color: var(--muted);
+    margin-bottom: 20px;
+  }
+  .journey--dark .journey__tag { color: var(--brand); }
+
+  .journey__steps {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    counter-reset: none;
+  }
+
+  .journey__step { display: flex; gap: 14px; }
+
+  .journey__num {
+    font-family: var(--font-mono);
+    font-weight: 700;
+    color: var(--link-hover);
+    flex: 0 0 22px;
+  }
+  .journey--dark .journey__num { color: var(--brand); }
+
+  .journey__title { font-weight: 700; font-size: 15.5px; }
+
+  .journey__text {
+    font-size: 14.5px;
+    line-height: 1.6;
+    color: var(--sec);
+    margin: 4px 0 0;
+  }
+  .journey--dark .journey__text { color: var(--on-dark); }
+
+  @media (max-width: 560px) {
+    .journey { padding: 24px; }
+  }
+</style>

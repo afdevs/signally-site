@@ -1,0 +1,219 @@
+---
+/**
+ * Maquette « nouveau message Outlook » du hero d'accueil, avec la
+ * signature générée et le carrousel de bannières planifiées.
+ * Purement décorative : masquée aux technologies d'assistance, le
+ * message de la section étant déjà porté par le titre et le texte.
+ */
+
+const BANNERS = [
+  {
+    title: 'Salon Vivatech — Hall 2, B34',
+    sub: 'On vous réserve un créneau ?',
+    cta: 'Prendre RDV',
+    bg: '#F2C531',
+    ink: '#1A1A1A',
+    subInk: '#4A4A46',
+    ctaBg: '#1A1A1A',
+    ctaInk: '#fff',
+  },
+  {
+    title: 'Nouveau : le rapport 2026',
+    sub: 'Signatures & performance e-mail',
+    cta: 'Télécharger',
+    bg: '#1A1A1A',
+    ink: '#fff',
+    subInk: '#A9A7A0',
+    ctaBg: '#F2C531',
+    ctaInk: '#1A1A1A',
+  },
+  {
+    title: 'Nous recrutons — 12 postes ouverts',
+    sub: "Rejoignez l'équipe",
+    cta: 'Voir les offres',
+    bg: '#FDF3D4',
+    ink: '#1A1A1A',
+    subInk: '#5C5C58',
+    ctaBg: '#1A1A1A',
+    ctaInk: '#fff',
+  },
+];
+---
+
+<div class="mock" aria-hidden="true">
+  <div class="mock__bar">
+    <span class="mock__dot"></span>
+    <span class="mock__dot"></span>
+    <span class="mock__label">NOUVEAU MESSAGE — OUTLOOK</span>
+  </div>
+
+  <div class="mock__body">
+    <div>Bonjour Claire,</div>
+    <div>Merci pour notre échange de ce matin, je reviens vers vous avec la proposition.</div>
+    <div>Bien à vous,</div>
+  </div>
+
+  <div class="mock__sig">
+    <div class="mock__avatar">NA</div>
+    <div>
+      <div class="mock__name">Nicolas Adam</div>
+      <div class="mock__role">Product Owner — Signally</div>
+      <div class="mock__meta">+33 6 12 34 56 78<br />9 rue des Halles, 75001 Paris</div>
+      <div class="mock__social">
+        <span></span><span></span><span></span>
+      </div>
+    </div>
+  </div>
+
+  <div class="mock__campaign-label">CAMPAGNE PLANIFIÉE</div>
+  <div class="mock__campaign">
+    <div class="mock__slider">
+      {BANNERS.map((b) => (
+        <div
+          class="mock__banner"
+          style={`background:${b.bg};color:${b.ink}`}
+        >
+          <div>
+            <div class="mock__banner-title">{b.title}</div>
+            <div class="mock__banner-sub" style={`color:${b.subInk}`}>{b.sub}</div>
+          </div>
+          <span class="mock__banner-cta" style={`background:${b.ctaBg};color:${b.ctaInk}`}>{b.cta}</span>
+        </div>
+      ))}
+    </div>
+  </div>
+</div>
+
+<style>
+  .mock {
+    background: var(--white);
+    color: var(--ink);
+    border-radius: var(--r-2xl);
+    padding: 26px;
+    box-shadow: var(--shadow-card);
+    animation: sgUp 0.8s ease-out 0.1s both;
+  }
+
+  .mock__bar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding-bottom: 14px;
+    border-bottom: 1px solid var(--line);
+    margin-bottom: 20px;
+  }
+
+  .mock__dot {
+    width: 10px;
+    height: 10px;
+    border-radius: var(--r-pill);
+    background: var(--line);
+  }
+
+  .mock__label {
+    font-family: var(--font-mono);
+    font-size: 10.5px;
+    color: var(--muted);
+    margin-left: 8px;
+  }
+
+  .mock__body {
+    font-size: 14px;
+    color: var(--sec);
+    line-height: 1.7;
+    margin-bottom: 22px;
+  }
+  .mock__body > div + div { margin-top: 8px; }
+
+  .mock__sig {
+    border-top: 2px solid var(--brand);
+    padding-top: 16px;
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 16px;
+    align-items: start;
+  }
+
+  .mock__avatar {
+    width: 58px;
+    height: 58px;
+    border-radius: var(--r-md);
+    background: var(--soft);
+    border: 1px solid var(--line);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--font-mono);
+    font-weight: 700;
+    font-size: 17px;
+    color: var(--muted);
+  }
+
+  .mock__name { font-weight: 800; font-size: 15px; }
+  .mock__role { font-size: 13px; color: var(--sec); margin-bottom: 6px; }
+
+  .mock__meta {
+    font-family: var(--font-mono);
+    font-size: 11.5px;
+    color: var(--sec);
+    line-height: 1.7;
+  }
+
+  .mock__social { display: flex; gap: 6px; margin-top: 10px; }
+  .mock__social span {
+    width: 22px;
+    height: 22px;
+    border-radius: 5px;
+    background: var(--ink);
+  }
+
+  .mock__campaign-label {
+    margin-top: 18px;
+    margin-bottom: 8px;
+    font-family: var(--font-mono);
+    font-size: 10px;
+    letter-spacing: 0.08em;
+    color: var(--muted);
+  }
+
+  .mock__campaign {
+    border-radius: 12px;
+    overflow: hidden;
+    height: 96px;
+    position: relative;
+    background: var(--soft);
+    border: 1px solid var(--line);
+  }
+
+  .mock__slider {
+    position: absolute;
+    inset: 0;
+    animation: sgSlide 9s infinite;
+  }
+
+  .mock__banner {
+    height: 96px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 0 22px;
+  }
+
+  .mock__banner-title { font-weight: 800; font-size: 16px; }
+  .mock__banner-sub { font-size: 12.5px; }
+
+  .mock__banner-cta {
+    font-size: 12px;
+    font-weight: 700;
+    padding: 8px 12px;
+    border-radius: var(--r-sm);
+    white-space: nowrap;
+  }
+
+  @media (max-width: 560px) {
+    .mock { padding: 20px; }
+    .mock__banner { padding: 0 14px; }
+    .mock__banner-title { font-size: 14px; }
+  }
+</style>

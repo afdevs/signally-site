@@ -1,0 +1,11 @@
+# Déposez ici les captures de l'application, aux noms exacts :
+#
+#   editor.png      — l'éditeur de signatures
+#   teams.png       — la gestion des équipes
+#   campaigns.png   — le planning de campagnes
+#
+# Elles s'affichent alors automatiquement dans la section
+# « L'outil, en trois écrans » de la page d'accueil, à la place du
+# cartouche de remplacement. Aucune modification de code n'est requise.
+#
+# Format conseillé : PNG, 2000 px de large minimum, ratio proche de 16:10.

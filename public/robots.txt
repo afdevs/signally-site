@@ -1,0 +1,8 @@
+User-agent: *
+Allow: /
+
+# Feuille de route éditoriale interne, non destinée à l'indexation.
+Disallow: /plan-seo
+Disallow: /api/
+
+Sitemap: https://www.signally.io/sitemap-index.xml

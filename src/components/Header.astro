@@ -1,0 +1,427 @@
+---
+import Logo from './Logo.astro';
+import { NAV_GROUPS, NAV_PRICING, APP_LOGIN_URL, APP_SIGNUP_URL } from '../data/nav';
+
+const current = Astro.url.pathname.replace(/\/$/, '') || '/';
+const isActive = (href: string) =>
+  href === '/' ? current === '/' : current === href || current.startsWith(href + '/');
+const groupActive = (items: { href: string }[]) => items.some((i) => isActive(i.href));
+---
+
+<header class="hdr">
+  <div class="hdr__inner">
+    <a href="/" class="hdr__logo" aria-label="Signally — accueil">
+      <Logo height={26} />
+    </a>
+
+    <nav class="hdr__nav" aria-label="Navigation principale">
+      {NAV_GROUPS.map((group) => (
+        <div class="menu" data-menu>
+          <button
+            type="button"
+            class="menu__trigger"
+            aria-expanded="false"
+            aria-controls={`menu-${group.id}`}
+            data-menu-trigger
+            data-active={groupActive(group.items) ? 'true' : undefined}
+          >
+            {group.label}
+            <svg class="menu__chev" width="10" height="6" viewBox="0 0 10 6" aria-hidden="true">
+              <path d="M1 1l4 4 4-4" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
+            </svg>
+          </button>
+          <div class="menu__wrap" id={`menu-${group.id}`} data-menu-panel hidden>
+            <div class="menu__panel">
+              {group.items.map((item) => (
+                <a href={item.href} class="menu__item" aria-current={isActive(item.href) ? 'page' : undefined}>
+                  <span class="menu__item-title">{item.label}</span>
+                  {item.desc && <span class="menu__item-desc">{item.desc}</span>}
+                </a>
+              ))}
+            </div>
+          </div>
+        </div>
+      ))}
+
+      <a
+        href={NAV_PRICING.href}
+        class="hdr__link"
+        data-active={isActive(NAV_PRICING.href) ? 'true' : undefined}
+        aria-current={isActive(NAV_PRICING.href) ? 'page' : undefined}
+      >
+        {NAV_PRICING.label}
+      </a>
+    </nav>
+
+    <div class="hdr__actions">
+      <span class="hdr__lang" title="Versions anglaise et espagnole au prochain lot">FR</span>
+      <a href={APP_LOGIN_URL} class="hdr__login" target="_blank" rel="noopener">Connexion</a>
+      <a href={APP_SIGNUP_URL} class="hdr__cta" target="_blank" rel="noopener">Créer ma signature</a>
+    </div>
+
+    <button type="button" class="hdr__burger" aria-expanded="false" aria-controls="mobile-nav" data-burger>
+      <span class="visually-hidden">Ouvrir le menu</span>
+      <span class="hdr__burger-bar" aria-hidden="true"></span>
+      <span class="hdr__burger-bar" aria-hidden="true"></span>
+      <span class="hdr__burger-bar" aria-hidden="true"></span>
+    </button>
+  </div>
+
+  <!-- Tiroir mobile : n'existe pas dans le prototype (desktop uniquement). -->
+  <div class="drawer" id="mobile-nav" data-drawer hidden>
+    <nav class="drawer__inner" aria-label="Navigation mobile">
+      {NAV_GROUPS.map((group) => (
+        <section class="drawer__group">
+          <h2 class="drawer__title">{group.label}</h2>
+          {group.items.map((item) => (
+            <a href={item.href} class="drawer__link" aria-current={isActive(item.href) ? 'page' : undefined}>
+              {item.label}
+            </a>
+          ))}
+        </section>
+      ))}
+      <section class="drawer__group">
+        <a href={NAV_PRICING.href} class="drawer__link drawer__link--lead">{NAV_PRICING.label}</a>
+        <a href={APP_LOGIN_URL} class="drawer__link" target="_blank" rel="noopener">Connexion</a>
+      </section>
+      <a href={APP_SIGNUP_URL} class="btn btn--brand" target="_blank" rel="noopener">Créer ma signature</a>
+    </nav>
+  </div>
+</header>
+
+<style>
+  .hdr {
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    background: rgba(255, 255, 255, 0.92);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--line);
+  }
+
+  .hdr__inner {
+    max-width: var(--container);
+    margin: 0 auto;
+    padding-inline: var(--gutter);
+    height: var(--header-h);
+    display: flex;
+    align-items: center;
+    gap: 28px;
+  }
+
+  .hdr__logo {
+    display: flex;
+    align-items: center;
+    flex: 0 0 auto;
+    text-decoration: none;
+  }
+
+  .hdr__nav {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    flex: 1 1 auto;
+    font-size: 14.5px;
+    font-weight: 500;
+    white-space: nowrap;
+  }
+
+  /* ---- Méga-menus ---- */
+  .menu { position: relative; }
+
+  .menu__trigger {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-family: var(--font-sans);
+    font-size: 14.5px;
+    font-weight: 500;
+    color: var(--sec);
+    background: none;
+    border: 0;
+    padding: 22px 12px;
+    cursor: pointer;
+    transition: color 0.15s ease;
+  }
+  .menu__trigger:hover,
+  .menu__trigger[aria-expanded='true'],
+  .menu__trigger[data-active] {
+    color: var(--ink);
+  }
+
+  .menu__chev {
+    transition: transform 0.18s ease;
+  }
+  .menu__trigger[aria-expanded='true'] .menu__chev {
+    transform: rotate(180deg);
+  }
+
+  .menu__wrap {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    padding-top: 10px;
+  }
+  .menu__wrap[hidden] { display: none; }
+
+  .menu__panel {
+    background: var(--white);
+    border: 1px solid var(--line);
+    border-radius: var(--r-lg);
+    box-shadow: var(--shadow-menu);
+    padding: 10px;
+    min-width: 270px;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    animation: sgUp 0.18s ease-out both;
+  }
+
+  .menu__item {
+    padding: 11px 12px;
+    border-radius: 9px;
+    color: var(--ink);
+    text-decoration: none;
+  }
+  .menu__item:hover,
+  .menu__item:focus-visible {
+    background: var(--soft);
+    color: var(--ink);
+    text-decoration: none;
+  }
+  .menu__item[aria-current='page'] { background: var(--brand-surface); }
+
+  .menu__item-title {
+    display: block;
+    font-weight: 700;
+    font-size: 14.5px;
+  }
+  .menu__item-desc {
+    display: block;
+    font-size: 12.5px;
+    color: var(--muted);
+    margin-top: 2px;
+  }
+
+  .hdr__link {
+    padding: 22px 12px;
+    color: var(--sec);
+    text-decoration: none;
+  }
+  .hdr__link:hover,
+  .hdr__link[data-active] {
+    color: var(--ink);
+    text-decoration: none;
+  }
+
+  /* ---- Actions ---- */
+  .hdr__actions {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    flex: 0 0 auto;
+  }
+
+  .hdr__lang {
+    font-family: var(--font-mono);
+    font-size: 11.5px;
+    font-weight: 600;
+    color: var(--muted);
+    cursor: default;
+  }
+
+  .hdr__login {
+    font-size: 14.5px;
+    font-weight: 500;
+    color: var(--sec);
+    text-decoration: none;
+  }
+  .hdr__login:hover { color: var(--ink); text-decoration: none; }
+
+  .hdr__cta {
+    font-size: 14.5px;
+    font-weight: 700;
+    padding: 11px 18px;
+    border-radius: var(--r-md);
+    background: var(--brand);
+    color: var(--ink);
+    text-decoration: none;
+    white-space: nowrap;
+    transition: background 0.15s ease;
+  }
+  .hdr__cta:hover { background: var(--brand-strong); color: var(--ink); text-decoration: none; }
+
+  /* ---- Burger ---- */
+  .hdr__burger {
+    display: none;
+    flex-direction: column;
+    justify-content: center;
+    gap: 5px;
+    width: 42px;
+    height: 42px;
+    padding: 0 9px;
+    margin-left: auto;
+    background: none;
+    border: 1px solid var(--line);
+    border-radius: var(--r-md);
+    cursor: pointer;
+  }
+  .hdr__burger-bar {
+    display: block;
+    height: 2px;
+    width: 100%;
+    background: var(--ink);
+    border-radius: 2px;
+    transition: transform 0.2s ease, opacity 0.2s ease;
+  }
+  .hdr__burger[aria-expanded='true'] .hdr__burger-bar:nth-child(2) {
+    transform: translateY(7px) rotate(45deg);
+  }
+  .hdr__burger[aria-expanded='true'] .hdr__burger-bar:nth-child(3) { opacity: 0; }
+  .hdr__burger[aria-expanded='true'] .hdr__burger-bar:nth-child(4) {
+    transform: translateY(-7px) rotate(-45deg);
+  }
+
+  /* ---- Tiroir ---- */
+  .drawer {
+    border-top: 1px solid var(--line);
+    background: var(--white);
+    max-height: calc(100dvh - var(--header-h));
+    overflow-y: auto;
+  }
+  .drawer[hidden] { display: none; }
+
+  .drawer__inner {
+    max-width: var(--container);
+    margin: 0 auto;
+    padding: 20px var(--gutter) 32px;
+    display: flex;
+    flex-direction: column;
+    gap: 22px;
+  }
+
+  .drawer__group {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .drawer__title {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    color: var(--muted);
+    margin: 0 0 8px;
+    font-weight: 500;
+  }
+
+  .drawer__link {
+    padding: 11px 0;
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--ink-2);
+    text-decoration: none;
+    border-bottom: 1px solid var(--line);
+  }
+  .drawer__link[aria-current='page'] { color: var(--link-hover); }
+  .drawer__link--lead { font-weight: 700; }
+
+  @media (max-width: 1024px) {
+    .hdr__nav,
+    .hdr__actions { display: none; }
+    .hdr__burger { display: flex; }
+  }
+</style>
+
+<script>
+  // ---- Méga-menus : survol au pointeur, clavier au clic/Échap ----
+  const menus = Array.from(document.querySelectorAll<HTMLElement>('[data-menu]'));
+  const finePointer = window.matchMedia('(hover: hover) and (pointer: fine)');
+  let hoverTimer: number | undefined;
+
+  function panelOf(menu: HTMLElement) {
+    return menu.querySelector<HTMLElement>('[data-menu-panel]');
+  }
+  function triggerOf(menu: HTMLElement) {
+    return menu.querySelector<HTMLButtonElement>('[data-menu-trigger]');
+  }
+
+  function setOpen(menu: HTMLElement, open: boolean) {
+    const panel = panelOf(menu);
+    const trigger = triggerOf(menu);
+    if (!panel || !trigger) return;
+    panel.hidden = !open;
+    trigger.setAttribute('aria-expanded', String(open));
+  }
+
+  function closeAll(except?: HTMLElement) {
+    for (const m of menus) if (m !== except) setOpen(m, false);
+  }
+
+  for (const menu of menus) {
+    const trigger = triggerOf(menu);
+    if (!trigger) continue;
+
+    menu.addEventListener('mouseenter', () => {
+      if (!finePointer.matches) return;
+      window.clearTimeout(hoverTimer);
+      closeAll(menu);
+      setOpen(menu, true);
+    });
+
+    menu.addEventListener('mouseleave', () => {
+      if (!finePointer.matches) return;
+      // Petit délai : le panneau est décalé de 10px sous le déclencheur,
+      // fermer immédiatement rendrait la diagonale impossible à parcourir.
+      hoverTimer = window.setTimeout(() => setOpen(menu, false), 120);
+    });
+
+    trigger.addEventListener('click', () => {
+      const open = trigger.getAttribute('aria-expanded') === 'true';
+      closeAll(menu);
+      setOpen(menu, !open);
+    });
+
+    menu.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape') {
+        setOpen(menu, false);
+        trigger.focus();
+      }
+      if (event.key === 'ArrowDown' && document.activeElement === trigger) {
+        event.preventDefault();
+        setOpen(menu, true);
+        panelOf(menu)?.querySelector<HTMLAnchorElement>('a')?.focus();
+      }
+    });
+
+    // Le focus sort du menu (Tab depuis le dernier lien) : on referme.
+    menu.addEventListener('focusout', (event) => {
+      const next = event.relatedTarget as Node | null;
+      if (!next || !menu.contains(next)) setOpen(menu, false);
+    });
+  }
+
+  document.addEventListener('click', (event) => {
+    const target = event.target as Node;
+    if (!menus.some((m) => m.contains(target))) closeAll();
+  });
+
+  // ---- Tiroir mobile ----
+  const burger = document.querySelector<HTMLButtonElement>('[data-burger]');
+  const drawer = document.querySelector<HTMLElement>('[data-drawer]');
+
+  burger?.addEventListener('click', () => {
+    if (!drawer) return;
+    const open = burger.getAttribute('aria-expanded') === 'true';
+    burger.setAttribute('aria-expanded', String(!open));
+    drawer.hidden = open;
+    burger.querySelector('.visually-hidden')!.textContent = open ? 'Ouvrir le menu' : 'Fermer le menu';
+  });
+
+  document.addEventListener('keydown', (event) => {
+    if (event.key !== 'Escape' || !drawer || drawer.hidden) return;
+    drawer.hidden = true;
+    burger?.setAttribute('aria-expanded', 'false');
+    burger?.focus();
+  });
+</script>

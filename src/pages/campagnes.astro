@@ -1,0 +1,259 @@
+---
+import Base from '../layouts/Base.astro';
+import PageHero from '../components/PageHero.astro';
+import FaqSection from '../components/FaqSection.astro';
+import CtaBand from '../components/CtaBand.astro';
+import Satellites from '../components/Satellites.astro';
+import { campaignsFaq, faqPageLd } from '../data/faq';
+
+const uses = [
+  {
+    tag: 'ÉVÉNEMENTIEL',
+    title: 'Salons et webinaires',
+    text: "Annoncez votre stand trois semaines avant, arrêtez la campagne le soir de la clôture, sans y repenser.",
+  },
+  {
+    tag: 'MARQUE EMPLOYEUR',
+    title: 'Recrutement',
+    text: "Poussez vos offres depuis la signature de toute l'entreprise : vos collaborateurs deviennent votre premier canal de sourcing.",
+  },
+  {
+    tag: 'PRODUIT',
+    title: 'Lancements & nouveautés',
+    text: 'Ciblez la bannière sur les équipes commerciales pendant que le support garde la sienne.',
+  },
+  {
+    tag: 'RÉPUTATION',
+    title: 'Avis clients',
+    text: "Un bouton d'avis Google dans la signature du support : la demande arrive au bon moment, après un échange réussi.",
+  },
+  {
+    tag: 'RSE & INTERNE',
+    title: 'Engagements et actualités',
+    text: 'Certification obtenue, rapport annuel, action solidaire : la preuve circule sur chaque échange.',
+  },
+  {
+    tag: 'COMMERCIAL',
+    title: 'Prise de rendez-vous',
+    text: "Un lien de réservation d'agenda sous chaque e-mail commercial, sans relance supplémentaire.",
+  },
+];
+
+const pillars = [
+  {
+    title: 'Une date de début et une date de fin',
+    text: "La bannière apparaît et disparaît toute seule. Plus de campagne fantôme qui traîne trois mois après l'événement.",
+  },
+  {
+    title: 'Un ciblage par équipe',
+    text: "Toute l'entreprise, une filiale, un pays, un service, ou une poignée de collaborateurs.",
+  },
+  {
+    title: 'Des campagnes qui se succèdent',
+    text: 'Construisez votre calendrier au trimestre : chaque campagne prend le relais de la précédente.',
+  },
+  {
+    title: 'Des clics attribués',
+    text: "Vous savez quelle bannière a généré du trafic, sur quelle période et depuis quelle équipe.",
+  },
+];
+
+const previews = [
+  {
+    title: 'Webinaire — Signatures & conformité',
+    sub: 'Jeudi 12 mars, 11 h',
+    cta: "S'inscrire",
+    bg: '#F2C531', ink: '#1A1A1A', subInk: '#4A4A46', ctaBg: '#1A1A1A', ctaInk: '#fff', border: 'none',
+  },
+  {
+    title: 'Nous recrutons 12 profils',
+    sub: 'Tech, produit, commerce',
+    cta: 'Voir les offres',
+    bg: '#1A1A1A', ink: '#fff', subInk: '#A9A7A0', ctaBg: '#F2C531', ctaInk: '#1A1A1A', border: 'none',
+  },
+  {
+    title: 'Votre avis compte',
+    sub: '30 secondes, une étoile',
+    cta: 'Donner mon avis',
+    bg: '#FDF3D4', ink: '#1A1A1A', subInk: '#5C5C58', ctaBg: '#1A1A1A', ctaInk: '#fff', border: '1px solid #F2C531',
+  },
+];
+---
+
+<Base
+  title="Campagnes de bannières dans la signature mail — marketing par e-mail sortant"
+  description="Transformez chaque e-mail sortant en support de communication : bannières cliquables, ciblage par équipe, planification automatique et suivi des clics."
+  path="/campagnes"
+  jsonLd={[faqPageLd(campaignsFaq)]}
+>
+  <PageHero
+    eyebrow="Campagnes & bannières"
+    title="Le marketing par signature mail : le canal que vous possédez déjà."
+    lede="Une campagne Signally, c'est une bannière placée sous la signature de vos collaborateurs, ciblée sur les équipes de votre choix et planifiée dans le temps. Zéro coût média, zéro friction, une audience déjà en relation avec vous."
+  />
+
+  <section class="section section--white">
+    <div class="container">
+      <h2 class="sec__title">Ce que vous pouvez diffuser sans écrire une newsletter</h2>
+      <p class="sec__lede">
+        Chaque e-mail professionnel est ouvert dans plus de neuf cas sur dix. Une bannière de
+        signature est vue par vos clients, vos prospects, vos fournisseurs et vos candidats.
+      </p>
+      <div class="grid grid--3">
+        {uses.map((u) => (
+          <div class="card">
+            <div class="card__tag">{u.tag}</div>
+            <h3>{u.title}</h3>
+            <p>{u.text}</p>
+          </div>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <section class="section section--soft">
+    <div class="container split">
+      <div>
+        <h2 class="split__title">Planifier, cibler, mesurer</h2>
+        <div class="pillars">
+          {pillars.map((p) => (
+            <div>
+              <div class="pillars__title">{p.title}</div>
+              <p class="pillars__text">{p.text}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div class="preview">
+        <div class="preview__tag">APERÇU DE BANNIÈRE</div>
+        <div class="preview__list">
+          {previews.map((p) => (
+            <div
+              class="preview__banner"
+              style={`background:${p.bg};color:${p.ink};border:${p.border}`}
+            >
+              <div>
+                <div class="preview__title">{p.title}</div>
+                <div class="preview__sub" style={`color:${p.subInk}`}>{p.sub}</div>
+              </div>
+              <span class="preview__cta" style={`background:${p.ctaBg};color:${p.ctaInk}`}>{p.cta}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <FaqSection title="Questions fréquentes sur les campagnes de bannières" items={campaignsFaq} />
+
+  <Satellites pillar="/campagnes" />
+
+  <CtaBand
+    title="Lancez votre première campagne avec Signally"
+    text="Créez la bannière, choisissez les équipes, fixez les dates. Le reste se déclenche tout seul."
+    secondaryLabel="Parler à un expert"
+  />
+</Base>
+
+<style>
+  .sec__title {
+    font-size: 36px;
+    line-height: 1.14;
+    letter-spacing: -0.02em;
+    font-weight: 800;
+    margin: 0 0 16px;
+    max-width: 760px;
+  }
+
+  .sec__lede {
+    font-size: 17px;
+    color: var(--sec);
+    margin: 0 0 44px;
+    max-width: 700px;
+  }
+
+  .card__tag {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    color: var(--muted);
+    margin-bottom: 12px;
+  }
+
+  .split {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 56px;
+    align-items: center;
+  }
+
+  .split__title {
+    font-size: 34px;
+    line-height: 1.14;
+    letter-spacing: -0.02em;
+    font-weight: 800;
+    margin: 0 0 16px;
+  }
+
+  .pillars {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+    margin-top: 24px;
+  }
+
+  .pillars__title { font-weight: 800; font-size: 16.5px; margin-bottom: 4px; }
+  .pillars__text { font-size: 15px; line-height: 1.6; color: var(--sec); margin: 0; }
+
+  .preview {
+    background: var(--white);
+    border: 1px solid var(--line);
+    border-radius: var(--r-2xl);
+    padding: 28px;
+  }
+
+  .preview__tag {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    color: var(--muted);
+    margin-bottom: 16px;
+  }
+
+  .preview__list { display: flex; flex-direction: column; gap: 14px; }
+
+  .preview__banner {
+    border-radius: 12px;
+    min-height: 88px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 16px 22px;
+  }
+
+  .preview__title { font-weight: 800; font-size: 16px; }
+  .preview__sub { font-size: 12.5px; }
+
+  .preview__cta {
+    font-size: 12px;
+    font-weight: 700;
+    padding: 8px 12px;
+    border-radius: var(--r-sm);
+    white-space: nowrap;
+  }
+
+  @media (max-width: 1024px) {
+    .sec__title { font-size: 29px; }
+    .split { grid-template-columns: 1fr; gap: 36px; }
+    .split__title { font-size: 28px; }
+  }
+
+  @media (max-width: 560px) {
+    .sec__title { font-size: 25px; }
+    .split__title { font-size: 24px; }
+    .preview { padding: 20px; }
+    .preview__banner { padding: 14px 16px; flex-direction: column; align-items: flex-start; }
+  }
+</style>

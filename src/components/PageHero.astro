@@ -1,0 +1,66 @@
+---
+/**
+ * Bandeau de tête sombre commun aux pages intérieures
+ * (prototype : padding 76px 24px 84px, fond #1A1A1A).
+ */
+
+interface Props {
+  eyebrow: string;
+  title: string;
+  lede?: string;
+  /** Réduit le padding — utilisé par Contact et Blog dans le prototype. */
+  tight?: boolean;
+}
+
+const { eyebrow, title, lede, tight = false } = Astro.props;
+---
+
+<section class:list={['phero', 'on-dark', tight && 'phero--tight']}>
+  <div class="container">
+    <div class="eyebrow eyebrow--brand">{eyebrow}</div>
+    <h1 class:list={['phero__title', tight && 'phero__title--tight']}>{title}</h1>
+    {lede && <p class="phero__lede">{lede}</p>}
+    <slot />
+  </div>
+</section>
+
+<style>
+  .phero {
+    background: var(--ink);
+    color: var(--white);
+    padding: 76px 0 84px;
+  }
+  .phero--tight { padding: 72px 0 76px; }
+
+  .phero__title {
+    font-size: 50px;
+    line-height: 1.08;
+    letter-spacing: -0.025em;
+    font-weight: 800;
+    margin: 0 0 18px;
+    max-width: 900px;
+  }
+  .phero__title--tight { font-size: 46px; line-height: 1.1; max-width: 880px; margin-bottom: 16px; }
+
+  .phero__lede {
+    font-size: 19px;
+    line-height: 1.55;
+    color: var(--on-dark);
+    margin: 0 0 28px;
+    max-width: 760px;
+  }
+  /* Sans contenu projeté après lui, le lede n'a pas à porter de marge basse. */
+  .phero__lede:last-child { margin-bottom: 0; }
+
+  @media (max-width: 1024px) {
+    .phero { padding: 60px 0 66px; }
+    .phero__title, .phero__title--tight { font-size: 38px; }
+    .phero__lede { font-size: 17.5px; }
+  }
+
+  @media (max-width: 560px) {
+    .phero { padding: 48px 0 52px; }
+    .phero__title, .phero__title--tight { font-size: 30px; letter-spacing: -0.02em; }
+    .phero__lede { font-size: 16.5px; }
+  }
+</style>

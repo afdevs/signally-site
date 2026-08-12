@@ -1,0 +1,760 @@
+---
+import Base from '../layouts/Base.astro';
+import SignatureMock from '../components/SignatureMock.astro';
+import Marquee from '../components/Marquee.astro';
+import AppTabs from '../components/AppTabs.astro';
+import CampaignPlanner from '../components/CampaignPlanner.astro';
+import PricingSimulator from '../components/PricingSimulator.astro';
+import Faq from '../components/Faq.astro';
+import CtaBand from '../components/CtaBand.astro';
+import { homeFaq, faqPageLd } from '../data/faq';
+import { APP_SIGNUP_URL } from '../data/nav';
+
+const rotating = ["Toute l'entreprise.", 'Toutes vos filiales.', 'Toutes vos campagnes.', "Toute l'entreprise."];
+
+const badges = ['DONNÉES EN FRANCE', 'AUCUN E-MAIL LU', 'SANS CARTE BANCAIRE'];
+
+const without = [
+  'Un modèle copié-collé de travers',
+  'Des logos écrasés, des liens morts',
+  'Aucune mention légale à jour',
+  'Des relances IT pendant trois semaines',
+];
+
+const with_ = [
+  "Un gabarit unique pour toute l'organisation",
+  'Des champs remplis depuis votre annuaire',
+  'Des mentions légales verrouillées',
+  'Une mise à jour poussée en minutes',
+];
+
+const stats = [
+  { value: '5 min', label: "pour déployer à toute l'entreprise" },
+  { value: '100 %', label: 'de signatures conformes' },
+  { value: '0 €', label: 'pour créer votre signature' },
+  { value: '0,50 €', label: 'par utilisateur au-delà de 500' },
+];
+
+const campaignPoints = [
+  'Bannières animées, cliquables, trackées',
+  'Ciblage par équipe, service ou filiale',
+  'Démarrage et arrêt automatiques',
+  'Statistiques de clics par campagne',
+];
+
+const privacy = [
+  { title: 'Données en France', text: 'Annuaire et gabarits hébergés sur des serveurs français.' },
+  { title: 'Aucun e-mail lu', text: "L'add-in insère une signature. Il ne lit rien d'autre." },
+  { title: 'Aucun transit', text: 'Pas de relais SMTP, pas de connecteur sortant.' },
+  { title: 'Envoi par votre compte', text: 'Vos messages partent de votre tenant Microsoft ou Google.' },
+];
+---
+
+<Base
+  title="Signally — Signatures mail et campagnes de bannières pour les entreprises"
+  description="Créez, déployez et planifiez les signatures mail de toute l'entreprise depuis une seule interface. Add-ins Microsoft 365 et Google Workspace, données hébergées en France."
+  path="/"
+  jsonLd={[faqPageLd(homeFaq)]}
+>
+  {/* ============ HERO ============ */}
+  <section class="hero on-dark">
+    <div class="hero__glow" aria-hidden="true"></div>
+    <div class="hero__inner">
+      <div>
+        <div class="hero__badge">
+          <span class="hero__badge-dot"></span>
+          Signatures mail &amp; campagnes
+        </div>
+        <h1 class="hero__title">
+          Une signature.<br />
+          <span class="hero__rotator">
+            <span class="hero__rotator-track">
+              {rotating.map((word) => <span class="hero__word">{word}</span>)}
+            </span>
+          </span>
+        </h1>
+        <p class="hero__lede">
+          Créez, déployez et planifiez les signatures de toute l'entreprise depuis une seule interface.
+        </p>
+        <div class="hero__actions">
+          <a href={APP_SIGNUP_URL} class="btn btn--brand btn--shadow btn--lift" target="_blank" rel="noopener">
+            Créer ma signature
+          </a>
+          <a href="/contact" class="btn btn--outline-dark">Voir une démo</a>
+        </div>
+        <div class="hero__badges">
+          {badges.map((b) => <span class="hero__chip">{b}</span>)}
+        </div>
+      </div>
+      <SignatureMock />
+    </div>
+  </section>
+
+  <Marquee />
+
+  <AppTabs />
+
+  {/* ============ PROBLÉMATIQUE ============ */}
+  <section class="section section--white">
+    <div class="container">
+      <div class="problem__head">
+        <div class="eyebrow">Problématique</div>
+        <h2 class="problem__title">
+          Changer la signature de 200 collaborateurs prend des semaines. Ou cinq minutes.
+        </h2>
+      </div>
+
+      <div class="problem__compare">
+        <div class="problem__col problem__col--without">
+          <div class="problem__tag">SANS SIGNALLY</div>
+          <div class="problem__list">
+            {without.map((item) => <div>{item}</div>)}
+          </div>
+        </div>
+        <div class="problem__col problem__col--with on-dark">
+          <div class="problem__tag problem__tag--brand">AVEC SIGNALLY</div>
+          <div class="problem__list problem__list--light">
+            {with_.map((item) => <div>{item}</div>)}
+          </div>
+        </div>
+      </div>
+
+      <div class="problem__stats">
+        {stats.map((stat) => (
+          <div class="problem__stat">
+            <div class="problem__stat-value">{stat.value}</div>
+            <div class="problem__stat-label">{stat.label}</div>
+          </div>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  {/* ============ POURQUOI SIGNALLY ============ */}
+  <section class="section section--soft">
+    <div class="container">
+      <div class="eyebrow">Pourquoi Signally</div>
+      <h2 class="why__title">Créer, déployer, programmer.</h2>
+
+      <div class="why__grid">
+        <div class="why__hero on-dark">
+          <div class="why__tag">DÉPLOYER</div>
+          <h3 class="why__hero-title">Une modification. Tout le monde à jour.</h3>
+          <p class="why__hero-text">
+            Les add-ins Microsoft et Google appliquent la signature à chaque collaborateur, sans qu'il
+            touche à quoi que ce soit.
+          </p>
+          <div class="why__rows" aria-hidden="true">
+            {[1, 2, 3].map(() => (
+              <div class="why__row">
+                <span class="why__avatar"></span>
+                <span class="why__line"></span>
+                <span class="why__status">À JOUR</span>
+              </div>
+            ))}
+          </div>
+          <div class="why__metrics">
+            <div>
+              <div class="why__metric-value">5 min</div>
+              <div class="why__metric-label">pour toute l'entreprise</div>
+            </div>
+            <div>
+              <div class="why__metric-value">0</div>
+              <div class="why__metric-label">action côté collaborateur</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card card--hover why__card">
+          <div class="why__tag why__tag--muted">CRÉER</div>
+          <h3 class="why__card-title">Un éditeur visuel et des gabarits verrouillés</h3>
+          <p class="why__card-text">
+            Rendu identique sur Outlook, Gmail et mobile. L'administrateur décide de ce qui reste
+            intouchable.
+          </p>
+          <a href="/fonctionnalites" class="arrow-link">L'éditeur →</a>
+        </div>
+
+        <div class="card card--hover why__card">
+          <div class="why__tag why__tag--muted">PROGRAMMER</div>
+          <h3 class="why__card-title">Des bannières planifiées, ciblées par équipe</h3>
+          <p class="why__card-text">
+            La campagne démarre et s'arrête seule. Les clics sont attribués par équipe.
+          </p>
+          <a href="/campagnes" class="arrow-link">Les campagnes →</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  {/* ============ CAMPAGNES ============ */}
+  <section class="section section--white">
+    <div class="container split">
+      <div>
+        <div class="eyebrow">Campagnes</div>
+        <h2 class="h-section">Vos e-mails sortants, votre premier média.</h2>
+        <p class="split__lede">
+          Une entreprise de 100 personnes envoie 300 000 e-mails par an. Autant d'impressions
+          publicitaires gratuites.
+        </p>
+        <ul class="bullets">
+          {campaignPoints.map((point) => (
+            <li><span class="bullets__dot"></span>{point}</li>
+          ))}
+        </ul>
+        <a href="/campagnes" class="btn btn--ink btn--sm">Découvrir les campagnes</a>
+      </div>
+      <CampaignPlanner />
+    </div>
+  </section>
+
+  {/* ============ INTÉGRATIONS ============ */}
+  <section class="section section--soft">
+    <div class="container">
+      <div class="integr__head">
+        <div>
+          <div class="eyebrow">Intégrations</div>
+          <h2 class="h-section">Une intégration en toute simplicité.</h2>
+        </div>
+        <p class="integr__note">
+          Les add-ins s'installent depuis votre console d'administration. Aucun reroutage, aucune
+          interruption.
+        </p>
+      </div>
+
+      <div class="grid grid--2">
+        <div class="card integr__card">
+          <div class="integr__tag">MICROSOFT 365 · OUTLOOK · EXCHANGE</div>
+          <h3 class="integr__title">Add-in Microsoft</h3>
+          <p class="integr__text">
+            Déploiement centralisé depuis le centre d'administration Microsoft 365. La signature
+            s'insère à la rédaction, dans Outlook Web, Windows, Mac et mobile.
+          </p>
+          <a href="/integrations/microsoft-365-outlook" class="arrow-link">
+            Comment fonctionne l'add-in Microsoft →
+          </a>
+        </div>
+        <div class="card integr__card">
+          <div class="integr__tag">GOOGLE WORKSPACE · GMAIL</div>
+          <h3 class="integr__title">Add-on Google</h3>
+          <p class="integr__text">
+            Installation à l'échelle du domaine depuis la console d'administration Google.
+            Synchronisation des unités organisationnelles et des annuaires.
+          </p>
+          <a href="/integrations/google-workspace-gmail" class="arrow-link">
+            Comment fonctionne l'add-on Google →
+          </a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  {/* ============ CONFIDENTIALITÉ ============ */}
+  <section class="section section--dark on-dark">
+    <div class="container">
+      <div class="eyebrow eyebrow--brand">Confidentialité &amp; conformité</div>
+      <h2 class="privacy__title">Signally ajoute une signature. Rien d'autre.</h2>
+      <p class="privacy__lede">La première question de votre DSI, et sa réponse en une phrase.</p>
+
+      <div class="grid grid--4 privacy__grid">
+        {privacy.map((item) => (
+          <div class="privacy__card">
+            <h3 class="privacy__card-title">{item.title}</h3>
+            <p class="privacy__card-text">{item.text}</p>
+          </div>
+        ))}
+      </div>
+
+      <a href="/securite-rgpd" class="btn btn--brand btn--sm privacy__cta">
+        Lire notre approche sécurité &amp; RGPD
+      </a>
+    </div>
+  </section>
+
+  {/* ============ TARIFS ============ */}
+  <section class="section section--white">
+    <div class="container split split--pricing">
+      <div>
+        <div class="eyebrow">Tarifs</div>
+        <h2 class="h-section">Toutes les fonctionnalités, dès le premier utilisateur.</h2>
+        <p class="split__lede">
+          Un seul tarif dégressif, de 1,50 € à 0,50 € HT par utilisateur et par mois. Faites glisser
+          le curseur.
+        </p>
+        <a href="/tarifs" class="btn btn--brand btn--sm">Simulateur détaillé</a>
+      </div>
+      <PricingSimulator variant="compact" />
+    </div>
+  </section>
+
+  {/* ============ FAQ ============ */}
+  <section class="section section--soft">
+    <div class="container-narrow">
+      <div class="eyebrow">FAQ</div>
+      <h2 class="faq__title">Les questions que l'on nous pose avant de signer</h2>
+      <Faq items={homeFaq} />
+    </div>
+  </section>
+
+  <CtaBand />
+</Base>
+
+<style>
+  /* ---------- HERO ---------- */
+  .hero {
+    position: relative;
+    overflow: hidden;
+    background: var(--ink);
+    color: var(--white);
+    padding: 96px var(--gutter) 104px;
+  }
+
+  .hero__glow {
+    position: absolute;
+    top: -180px;
+    right: -120px;
+    width: 620px;
+    height: 620px;
+    border-radius: var(--r-pill);
+    background: radial-gradient(circle, rgba(242, 197, 49, 0.22), rgba(242, 197, 49, 0) 65%);
+    animation: sgGlow 9s ease-in-out infinite;
+    pointer-events: none;
+  }
+
+  .hero__inner {
+    position: relative;
+    max-width: var(--container);
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: 1.02fr 0.98fr;
+    gap: 56px;
+    align-items: center;
+  }
+
+  .hero__badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 9px;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--brand);
+    border: 1px solid var(--ink-3);
+    border-radius: var(--r-pill);
+    padding: 7px 14px;
+    margin-bottom: 26px;
+    animation: sgUp 0.6s ease-out both;
+  }
+
+  .hero__badge-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: var(--r-pill);
+    background: var(--brand);
+  }
+
+  .hero__title {
+    font-size: 52px;
+    line-height: 1.08;
+    letter-spacing: -0.03em;
+    font-weight: 800;
+    margin: 0 0 22px;
+    animation: sgUp 0.7s ease-out 0.06s both;
+  }
+
+  .hero__rotator {
+    display: inline-block;
+    height: 60px;
+    overflow: hidden;
+    vertical-align: bottom;
+    white-space: nowrap;
+  }
+
+  .hero__rotator-track {
+    display: block;
+    animation: sgWord 10s cubic-bezier(0.7, 0, 0.2, 1) infinite;
+  }
+
+  .hero__word {
+    display: block;
+    height: 60px;
+    line-height: 60px;
+    color: var(--brand);
+    white-space: nowrap;
+  }
+
+  .hero__lede {
+    font-size: 19px;
+    line-height: 1.55;
+    color: var(--on-dark);
+    margin: 0 0 32px;
+    max-width: 480px;
+    animation: sgUp 0.7s ease-out 0.12s both;
+  }
+
+  .hero__actions {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-bottom: 32px;
+    animation: sgUp 0.7s ease-out 0.18s both;
+  }
+
+  .hero__badges {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    animation: sgUp 0.7s ease-out 0.24s both;
+  }
+
+  .hero__chip {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: 0.06em;
+    color: var(--on-dark-muted);
+    border: 1px solid var(--ink-3);
+    border-radius: var(--r-sm);
+    padding: 8px 12px;
+  }
+
+  /* ---------- PROBLÉMATIQUE ---------- */
+  .problem__head { max-width: 760px; margin-bottom: 48px; }
+
+  .problem__title {
+    font-size: 42px;
+    line-height: 1.1;
+    letter-spacing: -0.025em;
+    font-weight: 800;
+    margin: 0;
+  }
+
+  .problem__compare {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+  }
+
+  .problem__col {
+    border: 1px solid var(--line);
+    border-radius: var(--r-xl);
+    padding: 32px;
+    background: var(--soft);
+  }
+
+  .problem__col--with {
+    border-color: var(--ink);
+    background: var(--ink);
+    color: var(--white);
+  }
+
+  .problem__tag {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    color: var(--muted);
+    margin-bottom: 22px;
+  }
+  .problem__tag--brand { color: var(--brand); }
+
+  .problem__list {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    font-size: 16px;
+    line-height: 1.4;
+    color: var(--sec);
+  }
+  .problem__list--light { color: var(--on-dark-strong); }
+
+  .problem__stats {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 24px;
+    margin-top: 32px;
+  }
+
+  .problem__stat {
+    padding: 24px 24px 26px;
+    border-top: 2px solid var(--brand);
+  }
+
+  .problem__stat-value {
+    font-family: var(--font-mono);
+    font-size: 38px;
+    font-weight: 700;
+  }
+
+  .problem__stat-label { font-size: 14px; color: var(--sec); margin-top: 6px; }
+
+  /* ---------- POURQUOI ---------- */
+  .why__title {
+    font-size: 40px;
+    line-height: 1.12;
+    letter-spacing: -0.02em;
+    font-weight: 800;
+    margin: 0 0 48px;
+    max-width: 760px;
+  }
+
+  .why__grid {
+    display: grid;
+    grid-template-columns: 1.35fr 1fr;
+    grid-template-rows: auto auto;
+    gap: 20px;
+  }
+
+  .why__hero {
+    grid-row: span 2;
+    background: var(--ink);
+    color: var(--white);
+    border-radius: var(--r-2xl);
+    padding: 36px;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .why__tag {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    color: var(--brand);
+    margin-bottom: 18px;
+  }
+  .why__tag--muted { color: var(--muted); margin-bottom: 14px; }
+
+  .why__hero-title {
+    font-size: 30px;
+    font-weight: 800;
+    margin: 0 0 10px;
+    line-height: 1.15;
+    letter-spacing: -0.02em;
+  }
+
+  .why__hero-text {
+    font-size: 16px;
+    line-height: 1.55;
+    color: var(--on-dark);
+    margin: 0 0 28px;
+    max-width: 420px;
+  }
+
+  .why__rows {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 28px;
+  }
+
+  .why__row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: var(--ink-2);
+    border-radius: var(--r-md);
+    padding: 12px 14px;
+  }
+
+  .why__avatar {
+    width: 26px;
+    height: 26px;
+    border-radius: var(--r-pill);
+    background: var(--ink-3);
+    flex: 0 0 auto;
+  }
+
+  .why__line {
+    flex: 1;
+    height: 7px;
+    border-radius: var(--r-pill);
+    background: var(--ink-3);
+  }
+
+  .why__status {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    color: var(--brand);
+  }
+
+  .why__metrics {
+    margin-top: auto;
+    display: flex;
+    gap: 28px;
+    padding-top: 24px;
+    border-top: 1px solid var(--ink-3);
+  }
+
+  .why__metric-value {
+    font-family: var(--font-mono);
+    font-size: 26px;
+    font-weight: 700;
+  }
+
+  .why__metric-label { font-size: 13px; color: var(--on-dark-muted); margin-top: 2px; }
+
+  .why__card { border-radius: var(--r-2xl); padding: 30px; }
+  .why__card-title { font-size: 22px; font-weight: 800; margin: 0 0 8px; line-height: 1.2; }
+  .why__card-text { font-size: 15px; line-height: 1.55; color: var(--sec); margin: 0 0 16px; }
+
+  /* ---------- SPLIT ---------- */
+  .split {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 64px;
+    align-items: center;
+  }
+  .split--pricing { grid-template-columns: 0.9fr 1.1fr; gap: 56px; }
+
+  .split__lede {
+    font-size: 17px;
+    line-height: 1.6;
+    color: var(--sec);
+    margin: 16px 0 24px;
+  }
+
+  .bullets {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin: 0 0 26px;
+    padding: 0;
+    list-style: none;
+  }
+  .bullets li {
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+    font-size: 15.5px;
+    line-height: 1.5;
+  }
+  .bullets__dot {
+    width: 8px;
+    height: 8px;
+    border-radius: var(--r-pill);
+    background: var(--brand);
+    margin-top: 8px;
+    flex: 0 0 auto;
+  }
+
+  /* ---------- INTÉGRATIONS ---------- */
+  .integr__head {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    gap: 32px;
+    margin-bottom: 44px;
+    flex-wrap: wrap;
+  }
+  .integr__head > div { max-width: 640px; }
+
+  .integr__note {
+    font-size: 16px;
+    line-height: 1.6;
+    color: var(--sec);
+    margin: 0;
+    max-width: 400px;
+  }
+
+  .integr__card { border-radius: var(--r-xl); padding: 32px; }
+  .integr__tag {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    color: var(--muted);
+    margin-bottom: 14px;
+  }
+  .integr__title { font-size: 22px; font-weight: 800; margin: 0 0 10px; }
+  .integr__text { font-size: 15px; line-height: 1.6; color: var(--sec); margin: 0 0 18px; }
+
+  /* ---------- CONFIDENTIALITÉ ---------- */
+  .privacy__title {
+    font-size: 38px;
+    line-height: 1.14;
+    letter-spacing: -0.02em;
+    font-weight: 800;
+    margin: 0 0 16px;
+    max-width: 800px;
+  }
+
+  .privacy__lede {
+    font-size: 17px;
+    line-height: 1.6;
+    color: var(--on-dark);
+    margin: 0 0 44px;
+    max-width: 700px;
+  }
+
+  .privacy__grid { gap: 20px; }
+
+  .privacy__card {
+    border: 1px solid var(--ink-3);
+    border-radius: 16px;
+    padding: 26px;
+  }
+
+  .privacy__card-title { font-size: 17px; font-weight: 800; margin: 0 0 8px; color: var(--brand); }
+  .privacy__card-text { font-size: 14.5px; line-height: 1.55; color: var(--on-dark); margin: 0; }
+
+  .privacy__cta { margin-top: 34px; }
+
+  /* ---------- FAQ ---------- */
+  .faq__title {
+    font-size: 38px;
+    line-height: 1.14;
+    letter-spacing: -0.02em;
+    font-weight: 800;
+    margin: 0 0 40px;
+  }
+
+  /* ---------- RESPONSIVE ---------- */
+  @media (max-width: 1024px) {
+    .hero { padding: 72px var(--gutter) 80px; }
+    .hero__inner { grid-template-columns: 1fr; gap: 44px; }
+    .hero__title { font-size: 42px; }
+    .hero__lede { max-width: none; }
+    .problem__title { font-size: 32px; }
+    .why__title { font-size: 32px; }
+    .why__grid { grid-template-columns: 1fr; }
+    .why__hero { grid-row: auto; }
+    .split, .split--pricing { grid-template-columns: 1fr; gap: 36px; }
+    .problem__stats { grid-template-columns: repeat(2, 1fr); }
+    .privacy__title { font-size: 30px; }
+    .faq__title { font-size: 30px; }
+  }
+
+  @media (max-width: 768px) {
+    .problem__compare { grid-template-columns: 1fr; }
+    .hero__title { font-size: 36px; }
+    .hero__rotator, .hero__word { height: 46px; line-height: 46px; }
+    /* Le keyframe sgWord décale de 60px : à 46px il faut réaligner. */
+    .hero__rotator-track { animation-name: sgWordSm; }
+  }
+
+  @media (max-width: 560px) {
+    .hero { padding: 56px var(--gutter) 64px; }
+    .hero__title { font-size: 30px; }
+    .hero__rotator, .hero__word { height: 38px; line-height: 38px; }
+    .hero__rotator-track { animation-name: sgWordXs; }
+    .hero__actions { flex-direction: column; align-items: stretch; }
+    .problem__stats { grid-template-columns: 1fr; }
+    .problem__title, .why__title, .privacy__title, .faq__title { font-size: 25px; }
+    .why__hero { padding: 26px; }
+    .why__hero-title { font-size: 23px; }
+    .problem__col { padding: 24px; }
+  }
+
+  /* Variantes du défilement de mots, calées sur les hauteurs réduites. */
+  @keyframes sgWordSm {
+    0%, 26%  { transform: translateY(0); }
+    33%, 59% { transform: translateY(-46px); }
+    66%, 92% { transform: translateY(-92px); }
+    100%     { transform: translateY(-138px); }
+  }
+
+  @keyframes sgWordXs {
+    0%, 26%  { transform: translateY(0); }
+    33%, 59% { transform: translateY(-38px); }
+    66%, 92% { transform: translateY(-76px); }
+    100%     { transform: translateY(-114px); }
+  }
+</style>

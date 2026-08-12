@@ -1,0 +1,82 @@
+---
+import { APP_SIGNUP_URL } from '../data/nav';
+
+interface Props {
+  title?: string;
+  text?: string;
+  primaryLabel?: string;
+  secondaryLabel?: string;
+  secondaryHref?: string;
+}
+
+const {
+  title = 'Commencez avec Signally',
+  text = "Créez votre signature en ligne, gratuitement et sans carte bancaire. Le déploiement à toute l'entreprise ne prend que quelques minutes de plus.",
+  primaryLabel = 'Créer ma signature',
+  secondaryLabel = 'Demander une démo',
+  secondaryHref = '/contact',
+} = Astro.props;
+
+// Le prototype colore « Signally » en jaune dans le titre.
+const [before, ...rest] = title.split('Signally');
+---
+
+<section class="cta on-dark">
+  <div class="cta__inner">
+    <h2 class="cta__title">
+      {before}{rest.length > 0 && <span class="cta__brand">Signally</span>}{rest.join('Signally')}
+    </h2>
+    <p class="cta__text">{text}</p>
+    <div class="cta__actions">
+      <a href={APP_SIGNUP_URL} class="btn btn--brand" target="_blank" rel="noopener">{primaryLabel}</a>
+      <a href={secondaryHref} class="btn btn--outline-dark">{secondaryLabel}</a>
+    </div>
+  </div>
+</section>
+
+<style>
+  .cta {
+    padding: var(--section-y-sm) var(--gutter);
+    background: var(--ink);
+    color: var(--white);
+    text-align: center;
+  }
+
+  .cta__inner {
+    max-width: 720px;
+    margin: 0 auto;
+  }
+
+  .cta__title {
+    font-size: 42px;
+    line-height: 1.1;
+    letter-spacing: -0.02em;
+    font-weight: 800;
+    margin: 0 0 14px;
+  }
+
+  .cta__brand { color: var(--brand); }
+
+  .cta__text {
+    font-size: 17px;
+    color: var(--on-dark);
+    margin: 0 0 30px;
+  }
+
+  .cta__actions {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+
+  @media (max-width: 768px) {
+    .cta__title { font-size: 32px; }
+  }
+
+  @media (max-width: 560px) {
+    .cta__title { font-size: 27px; }
+    .cta__text { font-size: 16px; }
+    .cta__actions { flex-direction: column; }
+  }
+</style>

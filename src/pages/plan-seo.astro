@@ -1,0 +1,315 @@
+---
+import { getCollection } from 'astro:content';
+import Base from '../layouts/Base.astro';
+import PageHero from '../components/PageHero.astro';
+import { PLANNED_ARTICLES, CLUSTERS, CLUSTER_DESC, PILLAR_OF } from '../data/clusters';
+
+/**
+ * Feuille de route éditoriale interne.
+ *
+ * Le prototype la reliait depuis le pied de page et la laissait
+ * indexable. Choix retenu avec Signally : la page reste accessible par
+ * URL pour l'équipe, mais elle porte un noindex, n'est pas liée depuis
+ * la navigation et est exclue du sitemap (voir astro.config.mjs).
+ */
+
+const published = new Set(
+  (await getCollection('blog', ({ data }) => !data.draft)).map((p) => p.id)
+);
+
+const counts = CLUSTERS.map((cluster) => ({
+  cluster,
+  total: PLANNED_ARTICLES.filter((a) => a.cluster === cluster).length,
+  done: PLANNED_ARTICLES.filter((a) => a.cluster === cluster && published.has(a.slug)).length,
+}));
+
+const totalDone = PLANNED_ARTICLES.filter((a) => published.has(a.slug)).length;
+
+const linkingRules = [
+  "Chaque article pointe vers sa page pilier avec une ancre descriptive (« add-in Microsoft 365 », jamais « cliquez ici »).",
+  'Chaque page pilier liste ses articles satellites en pied de page.',
+  'Deux liens latéraux minimum vers des articles du même pilier.',
+  'Un lien de conversion par article : simulateur de coût ou création de signature.',
+  "Les pages comparatives renvoient vers Tarifs et Sécurité, jamais l'inverse.",
+];
+
+const geoRules = [
+  'Une réponse directe de deux à trois phrases sous chaque titre H2, citable telle quelle.',
+  'Un bloc « En bref » en tête d\'article, structuré en puces factuelles.',
+  'Données structurées FAQPage, HowTo, Product et Organization sur les pages concernées.',
+  'Chiffres explicites et datés : grille tarifaire, durées de déploiement, localisation des données.',
+  "Formulations reprenant la question de l'utilisateur mot pour mot dans le H2.",
+  "Page « À propos » riche en entités : nom, adresse, dirigeants, hébergeur, pour l'ancrage de la marque.",
+];
+---
+
+<Base
+  title="Plan éditorial SEO — document interne"
+  description="Feuille de route éditoriale interne : 40 articles, 7 piliers, règles de maillage et d'optimisation pour moteurs génératifs."
+  path="/plan-seo"
+  noindex
+>
+  <PageHero
+    eyebrow="Document interne"
+    title="40 articles, 7 piliers, un maillage interne conçu pour durer."
+    lede="Feuille de route éditoriale de Signally. Cette page n'est ni indexée, ni reliée depuis la navigation : elle sert de référence à l'équipe."
+    tight
+  />
+
+  <section class="plan">
+    <div class="container">
+      <div class="notice">
+        <strong>Page interne.</strong> Servie en <code>noindex, nofollow</code> et exclue du
+        sitemap. Accessible par URL directe uniquement.
+      </div>
+
+      <div class="progress">
+        <div class="progress__head">
+          <h2 class="progress__title">Avancement</h2>
+          <div class="progress__count">
+            <span class="progress__done">{totalDone}</span> / {PLANNED_ARTICLES.length} articles rédigés
+          </div>
+        </div>
+        <div class="progress__bar">
+          <div
+            class="progress__fill"
+            style={`width:${(totalDone / PLANNED_ARTICLES.length) * 100}%`}
+          ></div>
+        </div>
+        <div class="progress__clusters">
+          {counts.map((c) => (
+            <div class="cluster">
+              <div class="cluster__name">{c.cluster}</div>
+              <div class="cluster__desc">{CLUSTER_DESC[c.cluster]}</div>
+              <div class="cluster__meta">
+                <span class="cluster__count">{c.done}/{c.total}</span>
+                <a href={PILLAR_OF[c.cluster].href} class="cluster__pillar">
+                  pilier : {PILLAR_OF[c.cluster].href}
+                </a>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <h2 class="sec__title">Les 40 articles</h2>
+      <div class="table-wrap">
+        <table class="plan-table">
+          <thead>
+            <tr>
+              <th>N°</th>
+              <th>Titre</th>
+              <th>Mot-clé cible</th>
+              <th>Pilier</th>
+              <th>État</th>
+            </tr>
+          </thead>
+          <tbody>
+            {PLANNED_ARTICLES.map((a) => (
+              <tr>
+                <td class="mono">{a.n}</td>
+                <td>
+                  {published.has(a.slug) ? (
+                    <a href={`/blog/${a.slug}`}>{a.title}</a>
+                  ) : (
+                    a.title
+                  )}
+                </td>
+                <td class="mono kw">{a.keyword}</td>
+                <td class="cat">{a.cluster}</td>
+                <td>
+                  <span class:list={['pill', published.has(a.slug) ? 'pill--ok' : 'pill--todo']}>
+                    {published.has(a.slug) ? 'publié' : 'à rédiger'}
+                  </span>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      <div class="rules">
+        <div class="rules__box">
+          <h2 class="rules__title">Règles de maillage interne</h2>
+          <ul class="rules__list">
+            {linkingRules.map((rule) => <li>{rule}</li>)}
+          </ul>
+          <p class="rules__note">
+            Vérifiées automatiquement par <code>npm run check:links</code> après chaque build.
+          </p>
+        </div>
+        <div class="rules__box rules__box--soft">
+          <h2 class="rules__title">Optimisation GEO — moteurs génératifs</h2>
+          <ul class="rules__list">
+            {geoRules.map((rule) => <li>{rule}</li>)}
+          </ul>
+          <p class="rules__note">
+            La page « À propos » reste à créer : elle attend les éléments d'identité de Signally
+            (adresse, dirigeants, hébergeur).
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+</Base>
+
+<style>
+  .plan { padding: 56px 0 96px; background: var(--white); }
+
+  .notice {
+    border: 1px dashed var(--brand-stronger);
+    background: var(--brand-surface);
+    border-radius: var(--r-lg);
+    padding: 16px 20px;
+    font-size: 14px;
+    color: var(--ink-4);
+    margin-bottom: 40px;
+  }
+  .notice code {
+    font-family: var(--font-mono);
+    font-size: 12.5px;
+    background: var(--white);
+    padding: 2px 6px;
+    border-radius: 4px;
+  }
+
+  .progress { margin-bottom: 56px; }
+
+  .progress__head {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 20px;
+    flex-wrap: wrap;
+    margin-bottom: 14px;
+  }
+
+  .progress__title { font-size: 24px; font-weight: 800; margin: 0; }
+
+  .progress__count { font-family: var(--font-mono); font-size: 14px; color: var(--sec); }
+  .progress__done { font-size: 20px; font-weight: 700; color: var(--ink); }
+
+  .progress__bar {
+    height: 8px;
+    background: var(--line);
+    border-radius: var(--r-pill);
+    overflow: hidden;
+    margin-bottom: 28px;
+  }
+  .progress__fill { height: 100%; background: var(--brand); }
+
+  .progress__clusters {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 16px;
+  }
+
+  .cluster {
+    border: 1px solid var(--line);
+    border-radius: var(--r-lg);
+    padding: 18px;
+  }
+  .cluster__name { font-weight: 800; font-size: 15px; margin-bottom: 4px; }
+  .cluster__desc { font-size: 13px; color: var(--sec); line-height: 1.5; margin-bottom: 10px; }
+  .cluster__meta {
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+    align-items: baseline;
+    flex-wrap: wrap;
+  }
+  .cluster__count { font-family: var(--font-mono); font-size: 13px; font-weight: 700; }
+  .cluster__pillar { font-family: var(--font-mono); font-size: 11px; color: var(--link-hover); }
+
+  .sec__title { font-size: 24px; font-weight: 800; margin: 0 0 18px; }
+
+  .table-wrap { overflow-x: auto; margin-bottom: 56px; }
+
+  .plan-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14px;
+    min-width: 900px;
+  }
+  .plan-table th,
+  .plan-table td {
+    border-bottom: 1px solid var(--line);
+    padding: 10px 12px;
+    text-align: left;
+    vertical-align: top;
+  }
+  .plan-table th {
+    background: var(--soft);
+    font-weight: 700;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--sec);
+    position: sticky;
+    top: 0;
+  }
+  .plan-table a { color: var(--ink); text-decoration: none; }
+  .plan-table a:hover { color: var(--link-hover); text-decoration: underline; }
+
+  .mono { font-family: var(--font-mono); font-size: 12.5px; color: var(--sec); }
+  .kw { color: var(--link-hover); }
+  .cat { font-size: 13px; color: var(--sec); white-space: nowrap; }
+
+  .pill {
+    display: inline-block;
+    font-family: var(--font-mono);
+    font-size: 10.5px;
+    letter-spacing: 0.06em;
+    padding: 3px 9px;
+    border-radius: var(--r-pill);
+    white-space: nowrap;
+  }
+  .pill--ok { background: var(--brand-subtle); color: var(--ink); }
+  .pill--todo { background: var(--soft); color: var(--muted); border: 1px solid var(--line); }
+
+  .rules {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+  }
+
+  .rules__box {
+    border: 1px solid var(--line);
+    border-radius: var(--r-xl);
+    padding: 30px;
+  }
+  .rules__box--soft { background: var(--soft); }
+
+  .rules__title { font-size: 22px; font-weight: 800; margin: 0 0 14px; }
+
+  .rules__list {
+    display: flex;
+    flex-direction: column;
+    gap: 11px;
+    margin: 0;
+    padding-left: 20px;
+    font-size: 15px;
+    line-height: 1.55;
+    color: var(--ink-2);
+  }
+
+  .rules__note {
+    font-size: 13px;
+    color: var(--muted);
+    margin: 16px 0 0;
+    padding-top: 14px;
+    border-top: 1px solid var(--line);
+  }
+  .rules__note code {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    background: var(--white);
+    border: 1px solid var(--line);
+    padding: 2px 6px;
+    border-radius: 4px;
+  }
+
+  @media (max-width: 900px) {
+    .rules { grid-template-columns: 1fr; }
+  }
+</style>

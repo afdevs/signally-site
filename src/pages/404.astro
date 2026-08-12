@@ -1,0 +1,96 @@
+---
+import Base from '../layouts/Base.astro';
+import { APP_SIGNUP_URL } from '../data/nav';
+
+const suggestions = [
+  { href: '/fonctionnalites', label: "L'éditeur de signatures" },
+  { href: '/tarifs', label: 'Tarifs et simulateur' },
+  { href: '/blog', label: 'Le blog' },
+  { href: '/contact', label: 'Contact & démonstration' },
+];
+---
+
+<Base
+  title="Page introuvable"
+  description="Cette page n'existe pas ou a été déplacée."
+  path="/404"
+  noindex
+>
+  <section class="nf">
+    <div class="container-narrow">
+      <div class="nf__code">404</div>
+      <h1 class="nf__title">Cette page n'existe pas.</h1>
+      <p class="nf__text">
+        Le lien est peut-être erroné, ou la page a été déplacée. Voici les endroits les plus utiles
+        du site.
+      </p>
+
+      <ul class="nf__links">
+        {suggestions.map((s) => (
+          <li><a href={s.href}>{s.label} →</a></li>
+        ))}
+      </ul>
+
+      <div class="nf__actions">
+        <a href="/" class="btn btn--ink btn--sm">Retour à l'accueil</a>
+        <a href={APP_SIGNUP_URL} class="btn btn--brand btn--sm" target="_blank" rel="noopener">
+          Créer ma signature
+        </a>
+      </div>
+    </div>
+  </section>
+</Base>
+
+<style>
+  .nf { padding: 96px 0 120px; background: var(--white); text-align: center; }
+
+  .nf__code {
+    font-family: var(--font-mono);
+    font-size: 72px;
+    font-weight: 700;
+    color: var(--brand);
+    line-height: 1;
+    margin-bottom: 20px;
+  }
+
+  .nf__title {
+    font-size: 38px;
+    line-height: 1.14;
+    letter-spacing: -0.02em;
+    font-weight: 800;
+    margin: 0 0 14px;
+  }
+
+  .nf__text {
+    font-size: 17px;
+    line-height: 1.6;
+    color: var(--sec);
+    margin: 0 auto 32px;
+    max-width: 520px;
+  }
+
+  .nf__links {
+    list-style: none;
+    margin: 0 0 36px;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    align-items: center;
+  }
+  .nf__links a { font-size: 16px; font-weight: 700; color: var(--link-hover); text-decoration: none; }
+  .nf__links a:hover { text-decoration: underline; }
+
+  .nf__actions {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+
+  @media (max-width: 560px) {
+    .nf { padding: 64px 0 80px; }
+    .nf__code { font-size: 56px; }
+    .nf__title { font-size: 27px; }
+  }
+</style>

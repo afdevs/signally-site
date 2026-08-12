@@ -1,0 +1,140 @@
+/* ============================================================
+   SIGNALLY — TOKENS
+   Repris tels quels du prototype Claude Design (bloc <style>,
+   lignes 19-39 de « Signally Site.dc.html »).
+
+   Note : les tokens du design system Celaneo (_ds/…/tokens/*.css)
+   décrivent une marque VERTE. Le prototype Signally écrase cette
+   palette en JAUNE. Le prototype fait foi ; le DS n'a servi que de
+   référence d'espacement et de typographie.
+   ============================================================ */
+
+:root {
+  /* ---- Marque ---- */
+  --brand: #f2c531;
+  --brand-strong: #e2b91d;
+  --brand-stronger: #caa315;
+  --brand-subtle: #fdf3d4;
+  --brand-surface: #fef9ea;
+  --brand-ink: #1a1a1a;
+
+  /* ---- Encre & neutres ---- */
+  --ink: #1a1a1a;
+  --ink-2: #2c2c2a;
+  --ink-3: #3a3a36;
+  --ink-4: #4a4a46;
+  --soft: #f7f6f2;
+  --line: #e8e6e0;
+  --sec: #5c5c58;
+  --muted: #8c8a84;
+  --on-dark: #c9c7c1;
+  --on-dark-muted: #a9a7a0;
+  --on-dark-strong: #e4e2dc;
+  --white: #fff;
+
+  /* Lien : le prototype utilise ce brun doré pour le texte accentué,
+     le jaune de marque étant illisible sur fond blanc. */
+  --link-hover: #8a6b0a;
+
+  /* ---- Typographie ---- */
+  --font-sans: 'Manrope Variable', Manrope, system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-mono: 'JetBrains Mono', 'SF Mono', ui-monospace, monospace;
+
+  /* ---- Layout ---- */
+  --container: 1240px;
+  --container-narrow: 920px;
+  --header-h: 68px;
+  --gutter: 24px;
+
+  /* ---- Rayons ---- */
+  --r-sm: 8px;
+  --r-md: 10px;
+  --r-lg: 14px;
+  --r-xl: 18px;
+  --r-2xl: 20px;
+  --r-3xl: 22px;
+  --r-pill: 999px;
+
+  /* ---- Ombres ---- */
+  --shadow-menu: 0 18px 40px rgba(0, 0, 0, 0.1);
+  --shadow-card: 0 30px 70px rgba(0, 0, 0, 0.35);
+  --shadow-cta: 0 10px 30px rgba(242, 197, 49, 0.25);
+
+  /* ---- Sections ---- */
+  --section-y: 96px;
+  --section-y-sm: 88px;
+}
+
+@media (max-width: 1024px) {
+  :root {
+    --section-y: 72px;
+    --section-y-sm: 64px;
+    --gutter: 20px;
+  }
+}
+
+@media (max-width: 560px) {
+  :root {
+    --section-y: 56px;
+    --section-y-sm: 52px;
+    --gutter: 18px;
+  }
+}
+
+/* ============================================================
+   ANIMATIONS — les sept keyframes du prototype
+   ============================================================ */
+
+@keyframes sgSlide {
+  0%, 22%   { transform: translateY(0); }
+  33%, 55%  { transform: translateY(-100%); }
+  66%, 88%  { transform: translateY(-200%); }
+  100%      { transform: translateY(-200%); }
+}
+
+@keyframes sgUp {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: none; }
+}
+
+@keyframes sgIn {
+  from { opacity: 0; transform: translateY(24px); }
+  to   { opacity: 1; transform: none; }
+}
+
+@keyframes sgWord {
+  0%, 26%   { transform: translateY(0); }
+  33%, 59%  { transform: translateY(-60px); }
+  66%, 92%  { transform: translateY(-120px); }
+  100%      { transform: translateY(-180px); }
+}
+
+@keyframes sgMarquee {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-50%); }
+}
+
+@keyframes sgGlow {
+  0%, 100% { opacity: 0.5; transform: scale(1); }
+  50%      { opacity: 0.85; transform: scale(1.08); }
+}
+
+@keyframes sgBar {
+  from { transform: scaleX(0); }
+  to   { transform: scaleX(1); }
+}
+
+/* Le prototype anime en permanence sept éléments. On respecte le
+   réglage système : plus aucun mouvement, mais le contenu final
+   reste visible (pas d'élément bloqué à opacity:0). */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    animation-delay: 0ms !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}

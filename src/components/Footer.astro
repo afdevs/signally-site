@@ -1,0 +1,128 @@
+---
+import Logo from './Logo.astro';
+import { FOOTER_COLUMNS, APP_SIGNUP_URL, SITE } from '../data/nav';
+
+const year = new Date().getFullYear();
+---
+
+<footer class="ftr">
+  <div class="ftr__grid">
+    <div class="ftr__brand">
+      <div class="ftr__logo"><Logo height={24} /></div>
+      <p class="ftr__desc">{SITE.description}</p>
+      <a href={APP_SIGNUP_URL} class="ftr__cta" target="_blank" rel="noopener">Créer ma signature</a>
+    </div>
+
+    {FOOTER_COLUMNS.map((col) => (
+      <nav class="ftr__col" aria-label={col.title}>
+        <h2 class="ftr__col-title">{col.title}</h2>
+        <div class="ftr__links">
+          {col.items.map((item) => (
+            <a
+              href={item.href}
+              {...(item.external ? { target: '_blank', rel: 'noopener' } : {})}
+            >
+              {item.label}
+            </a>
+          ))}
+        </div>
+      </nav>
+    ))}
+  </div>
+
+  <div class="ftr__bottom">
+    <span>© {year} {SITE.name} — {SITE.tagline}</span>
+    <span class="ftr__badges">HÉBERGEMENT EN FRANCE · RGPD · AUCUN E-MAIL LU</span>
+  </div>
+</footer>
+
+<style>
+  .ftr {
+    background: var(--soft);
+    border-top: 1px solid var(--line);
+    padding: 64px var(--gutter) 40px;
+  }
+
+  .ftr__grid {
+    max-width: var(--container);
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: 1.4fr 1fr 1fr 1fr 1fr;
+    gap: 40px;
+  }
+
+  .ftr__logo {
+    display: flex;
+    margin-bottom: 16px;
+  }
+
+  .ftr__desc {
+    font-size: 14px;
+    line-height: 1.6;
+    color: var(--sec);
+    margin: 0 0 16px;
+    max-width: 280px;
+  }
+
+  .ftr__cta {
+    font-size: 14px;
+    font-weight: 700;
+    padding: 11px 18px;
+    border-radius: var(--r-md);
+    background: var(--brand);
+    color: var(--ink);
+    text-decoration: none;
+    display: inline-block;
+    transition: background 0.15s ease;
+  }
+  .ftr__cta:hover { background: var(--brand-strong); color: var(--ink); text-decoration: none; }
+
+  .ftr__col-title {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.1em;
+    color: var(--muted);
+    margin: 0 0 14px;
+  }
+
+  .ftr__links {
+    display: flex;
+    flex-direction: column;
+    gap: 9px;
+    font-size: 14px;
+  }
+  .ftr__links a { color: var(--ink-2); text-decoration: none; }
+  .ftr__links a:hover { color: var(--link-hover); text-decoration: underline; }
+
+  .ftr__bottom {
+    max-width: var(--container);
+    margin: 40px auto 0;
+    padding-top: 24px;
+    border-top: 1px solid var(--line);
+    display: flex;
+    justify-content: space-between;
+    gap: 20px;
+    flex-wrap: wrap;
+    font-size: 13px;
+    color: var(--muted);
+  }
+
+  .ftr__badges {
+    font-family: var(--font-mono);
+    font-size: 11.5px;
+  }
+
+  @media (max-width: 1024px) {
+    .ftr__grid { grid-template-columns: 1fr 1fr 1fr; }
+    .ftr__brand { grid-column: 1 / -1; }
+  }
+
+  @media (max-width: 620px) {
+    .ftr__grid { grid-template-columns: 1fr 1fr; gap: 28px; }
+  }
+
+  @media (max-width: 420px) {
+    .ftr__grid { grid-template-columns: 1fr; }
+  }
+</style>

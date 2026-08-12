@@ -1,0 +1,46 @@
+---
+/**
+ * Logo Signally.
+ *
+ * Le PNG officiel est en place : `public/signally-logo.png`, 462 × 101,
+ * fond détouré. Le verrou (pastille + mot-symbole `SIGNALLY`) est en encre
+ * noire ; il n'est donc lisible que sur fond clair — l'en-tête (blanc) et
+ * le pied de page (`--soft`). Sur fond sombre, prévoir une variante claire
+ * plutôt que ce fichier.
+ *
+ * La pastille seule sert de favicon (`public/favicon.svg`, tracée depuis
+ * ce même verrou).
+ */
+
+interface Props {
+  /** Hauteur de rendu en px (26 dans l'en-tête, 24 dans le pied de page). */
+  height?: number;
+  class?: string;
+}
+
+const { height = 26, class: className } = Astro.props;
+---
+
+<span class:list={['logo', className]} style={`--logo-h:${height}px`}>
+  <img
+    src="/signally-logo.png"
+    alt="Signally"
+    width="462"
+    height="101"
+    class="logo__img"
+  />
+</span>
+
+<style>
+  .logo {
+    display: inline-flex;
+    align-items: center;
+    line-height: 1;
+  }
+
+  .logo__img {
+    height: var(--logo-h);
+    width: auto;
+    display: block;
+  }
+</style>

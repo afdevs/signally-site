@@ -1,0 +1,324 @@
+---
+import { ENVIRONMENTS } from '../lib/contact-schema';
+import { CONTACT_EMAIL } from '../data/nav';
+
+/**
+ * Formulaire de demande de démonstration.
+ *
+ * Il a une `action` et une `method` réelles : sans JavaScript, le
+ * navigateur poste normalement et l'API répond par une redirection.
+ * Avec JavaScript, le script intercepte, poste en JSON et affiche les
+ * erreurs champ par champ sans recharger la page.
+ */
+
+const { searchParams } = Astro.url;
+const sent = searchParams.get('envoye') === '1';
+const errorCode = searchParams.get('erreur');
+
+const ERRORS: Record<string, string> = {
+  validation: 'Certains champs sont incomplets ou invalides. Vérifiez le formulaire.',
+  frequence: 'Trop de demandes envoyées depuis cette adresse. Réessayez dans quelques minutes.',
+  envoi: `L'envoi a échoué. Réessayez dans un instant ou écrivez-nous à ${CONTACT_EMAIL}.`,
+  format: "La demande n'a pas pu être lue. Réessayez.",
+};
+const errorMessage = errorCode ? (ERRORS[errorCode] ?? ERRORS.envoi) : null;
+---
+
+<div class="form-card">
+  <h2 class="form-card__title">Demander une démonstration</h2>
+
+  <!-- Panneau de succès : affiché après une soumission sans JavaScript,
+       et réutilisé par le script après une réponse JSON positive. -->
+  <div class="alert alert--ok" data-success hidden={!sent} role="status">
+    <strong>Message envoyé.</strong>
+    Nous revenons vers vous sous un jour ouvré, à l'adresse indiquée.
+  </div>
+
+  <div class="alert alert--error" data-error hidden={!errorMessage} role="alert">
+    {errorMessage}
+  </div>
+
+  <form
+    method="POST"
+    action="/api/contact"
+    novalidate
+    data-contact-form
+    hidden={sent}
+  >
+    <div class="fields">
+      <div class="field">
+        <label for="name">Prénom et nom</label>
+        <input type="text" id="name" name="name" placeholder="Camille Durand" autocomplete="name" required />
+        <p class="field__error" data-error-for="name" hidden></p>
+      </div>
+
+      <div class="field">
+        <label for="email">E-mail professionnel</label>
+        <input type="email" id="email" name="email" placeholder="camille@entreprise.fr" autocomplete="email" required />
+        <p class="field__error" data-error-for="email" hidden></p>
+      </div>
+
+      <div class="field">
+        <label for="company">Entreprise</label>
+        <input type="text" id="company" name="company" placeholder="Nom de l'entreprise" autocomplete="organization" required />
+        <p class="field__error" data-error-for="company" hidden></p>
+      </div>
+
+      <div class="field">
+        <label for="headcount">Nombre de collaborateurs</label>
+        <input type="text" id="headcount" name="headcount" placeholder="120" inputmode="numeric" />
+        <p class="field__error" data-error-for="headcount" hidden></p>
+      </div>
+
+      <div class="field field--full">
+        <label for="environment">Environnement de messagerie</label>
+        <select id="environment" name="environment" required>
+          {ENVIRONMENTS.map((env) => <option value={env}>{env}</option>)}
+        </select>
+        <p class="field__error" data-error-for="environment" hidden></p>
+      </div>
+
+      <div class="field field--full">
+        <label for="message">Votre besoin</label>
+        <textarea
+          id="message"
+          name="message"
+          rows="4"
+          placeholder="Unifier les signatures de trois filiales et lancer une campagne de recrutement."
+          required></textarea>
+        <p class="field__error" data-error-for="message" hidden></p>
+      </div>
+    </div>
+
+    {/* Pot de miel : hors flux, invisible, ignoré par la saisie clavier. */}
+    <div class="honeypot" aria-hidden="true">
+      <label for="website">Ne remplissez pas ce champ</label>
+      <input type="text" id="website" name="website" tabindex="-1" autocomplete="off" />
+    </div>
+    <input type="hidden" name="ts" data-ts value="0" />
+
+    <button type="submit" class="form-card__submit" data-submit>Demander ma démo</button>
+
+    <p class="form-card__legal">
+      Vos coordonnées servent uniquement à traiter votre demande. Elles sont hébergées en France et
+      ne sont jamais cédées.
+    </p>
+  </form>
+</div>
+
+<style>
+  .form-card {
+    border: 1px solid var(--line);
+    border-radius: var(--r-2xl);
+    padding: 34px;
+  }
+
+  .form-card__title { font-size: 24px; font-weight: 800; margin: 0 0 24px; }
+
+  .alert {
+    border-radius: var(--r-md);
+    padding: 14px 16px;
+    font-size: 14.5px;
+    line-height: 1.55;
+    margin-bottom: 20px;
+  }
+  .alert[hidden] { display: none; }
+
+  .alert--ok {
+    background: var(--brand-surface);
+    border: 1px solid var(--brand);
+    color: var(--ink);
+  }
+
+  .alert--error {
+    background: #fdf0f0;
+    border: 1px solid #e8b4b4;
+    color: #8a2b2b;
+  }
+
+  .fields {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 18px;
+  }
+
+  .field--full { grid-column: 1 / -1; }
+
+  .field label {
+    display: block;
+    font-size: 13.5px;
+    font-weight: 700;
+    margin-bottom: 7px;
+  }
+
+  .field input,
+  .field select,
+  .field textarea {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 12px 14px;
+    border: 1px solid var(--line);
+    border-radius: var(--r-md);
+    font-family: var(--font-sans);
+    font-size: 14.5px;
+    color: var(--ink);
+    background: var(--white);
+    transition: border-color 0.15s ease;
+  }
+
+  .field input:hover,
+  .field select:hover,
+  .field textarea:hover { border-color: var(--border-strong, #a3a39e); }
+
+  .field input:focus,
+  .field select:focus,
+  .field textarea:focus {
+    border-color: var(--brand-stronger);
+    outline: 2px solid var(--brand);
+    outline-offset: 1px;
+  }
+
+  .field textarea { resize: vertical; min-height: 96px; }
+
+  .field input[aria-invalid='true'],
+  .field select[aria-invalid='true'],
+  .field textarea[aria-invalid='true'] { border-color: #d64545; }
+
+  .field__error {
+    font-size: 13px;
+    color: #b03636;
+    margin: 6px 0 0;
+  }
+  .field__error[hidden] { display: none; }
+
+  /* Hors écran plutôt que display:none — certains robots ignorent les
+     champs masqués par CSS classique mais remplissent ceux-ci. */
+  .honeypot {
+    position: absolute;
+    left: -9999px;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+  }
+
+  .form-card__submit {
+    margin-top: 22px;
+    font-family: var(--font-sans);
+    font-size: 15px;
+    font-weight: 700;
+    padding: 14px 24px;
+    border-radius: 11px;
+    background: var(--brand);
+    color: var(--ink);
+    border: 0;
+    cursor: pointer;
+    transition: background 0.15s ease;
+  }
+  .form-card__submit:hover:not(:disabled) { background: var(--brand-strong); }
+  .form-card__submit:disabled { opacity: 0.6; cursor: progress; }
+
+  .form-card__legal {
+    font-size: 12.5px;
+    line-height: 1.55;
+    color: var(--muted);
+    margin: 14px 0 0;
+  }
+
+  @media (max-width: 560px) {
+    .form-card { padding: 24px; }
+    .fields { grid-template-columns: 1fr; }
+    .form-card__submit { width: 100%; }
+  }
+</style>
+
+<script>
+  const form = document.querySelector<HTMLFormElement>('[data-contact-form]');
+
+  if (form) {
+    const submit = form.querySelector<HTMLButtonElement>('[data-submit]')!;
+    const successBox = document.querySelector<HTMLElement>('[data-success]')!;
+    const errorBox = document.querySelector<HTMLElement>('[data-error]')!;
+    const tsField = form.querySelector<HTMLInputElement>('[data-ts]')!;
+
+    // Horodatage d'affichage : sert au contrôle « soumis trop vite ».
+    tsField.value = String(Date.now());
+
+    const clearErrors = () => {
+      errorBox.hidden = true;
+      for (const el of form.querySelectorAll<HTMLElement>('[data-error-for]')) {
+        el.hidden = true;
+        el.textContent = '';
+      }
+      for (const el of form.querySelectorAll('[aria-invalid]')) {
+        el.removeAttribute('aria-invalid');
+      }
+    };
+
+    const showFieldErrors = (errors: Record<string, string>) => {
+      let first: HTMLElement | null = null;
+      for (const [field, message] of Object.entries(errors)) {
+        const slot = form.querySelector<HTMLElement>(`[data-error-for="${field}"]`);
+        const input = form.querySelector<HTMLElement>(`[name="${field}"]`);
+        if (slot) {
+          slot.textContent = message;
+          slot.hidden = false;
+        }
+        if (input) {
+          input.setAttribute('aria-invalid', 'true');
+          if (!first) first = input;
+        }
+      }
+      first?.focus();
+    };
+
+    const showError = (message: string) => {
+      errorBox.textContent = message;
+      errorBox.hidden = false;
+    };
+
+    form.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      clearErrors();
+
+      submit.disabled = true;
+      const label = submit.textContent;
+      submit.textContent = 'Envoi en cours…';
+
+      const payload = Object.fromEntries(new FormData(form));
+
+      try {
+        const response = await fetch('/api/contact', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+
+        const result = await response.json().catch(() => ({}));
+
+        if (response.ok && result.ok) {
+          form.hidden = true;
+          successBox.hidden = false;
+          successBox.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          return;
+        }
+
+        if (result.errors) {
+          showFieldErrors(result.errors);
+          showError('Certains champs sont incomplets ou invalides.');
+        } else {
+          showError(
+            result.error ??
+              "L'envoi a échoué. Réessayez ou écrivez-nous à contacts@signally.io."
+          );
+        }
+      } catch {
+        showError(
+          'Connexion impossible. Vérifiez votre réseau, ou écrivez-nous à contacts@signally.io.'
+        );
+      } finally {
+        submit.disabled = false;
+        submit.textContent = label;
+      }
+    });
+  }
+</script>

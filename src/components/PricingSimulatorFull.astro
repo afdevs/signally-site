@@ -1,0 +1,276 @@
+---
+import { simulate, eur, DEFAULTS } from '../lib/pricing';
+import { APP_SIGNUP_URL } from '../data/nav';
+
+const s = simulate({ ...DEFAULTS });
+
+const sliders = [
+  { key: 'users', id: 'sim-users', label: 'Nombre de collaborateurs', min: 1, max: 2000, step: 1, value: s.users, display: String(s.users), big: true },
+  { key: 'updates', id: 'sim-updates', label: 'Modifications de signature par an', min: 1, max: 12, step: 1, value: s.updates, display: String(s.updates), big: false },
+  { key: 'minutes', id: 'sim-minutes', label: 'Minutes passées par signature', min: 2, max: 45, step: 1, value: s.minutes, display: `${s.minutes} min`, big: false },
+  { key: 'hourly', id: 'sim-hourly', label: 'Coût horaire chargé', min: 20, max: 120, step: 5, value: s.hourly, display: `${s.hourly} €`, big: false },
+];
+
+const [usersSlider, ...assumptionSliders] = sliders;
+---
+
+<div class="simx" data-sim>
+  <div class="simx__head">
+    <h2 class="simx__title">Simulateur de coût</h2>
+    <p class="simx__intro">
+      Ajustez le nombre de collaborateurs et vos hypothèses internes : le simulateur compare le coût
+      de Signally au temps passé à gérer les signatures à la main.
+    </p>
+  </div>
+
+  <div class="simx__body">
+    <div class="simx__controls">
+      <div class="simx__field">
+        <div class="simx__field-head">
+          <label class="simx__label" for={usersSlider.id}>{usersSlider.label}</label>
+          <span class="simx__value" data-sim-label={usersSlider.key}>{usersSlider.display}</span>
+        </div>
+        <input
+          type="range"
+          id={usersSlider.id}
+          min={usersSlider.min}
+          max={usersSlider.max}
+          step={usersSlider.step}
+          value={usersSlider.value}
+          data-sim-input={usersSlider.key}
+          aria-describedby="simx-result"
+        />
+        <div class="simx__scale" aria-hidden="true">
+          <span>1</span><span>500</span><span>1000</span><span>2000</span>
+        </div>
+      </div>
+
+      <div class="simx__divider"></div>
+      <div class="simx__section">HYPOTHÈSES DE GESTION MANUELLE</div>
+
+      {assumptionSliders.map((slider) => (
+        <div class="simx__field">
+          <div class="simx__field-head">
+            <label class="simx__label" for={slider.id}>{slider.label}</label>
+            <span class="simx__value simx__value--sm" data-sim-label={slider.key}>{slider.display}</span>
+          </div>
+          <input
+            type="range"
+            id={slider.id}
+            min={slider.min}
+            max={slider.max}
+            step={slider.step}
+            value={slider.value}
+            data-sim-input={slider.key}
+            aria-describedby="simx-result"
+          />
+        </div>
+      ))}
+    </div>
+
+    <div class="simx__result on-dark" id="simx-result" aria-live="polite">
+      <div>
+        <div class="simx__result-tag">VOTRE TARIF</div>
+        <div class="simx__amount" data-sim-out="monthly">{eur(s.monthly)}</div>
+        <div class="simx__amount-note">
+          HT par mois — soit <span data-sim-out="rate">{eur(s.rate)}</span> par utilisateur
+        </div>
+      </div>
+
+      <div class="simx__hr"></div>
+
+      <div class="simx__metrics">
+        <div>
+          <div class="simx__metric" data-sim-out="yearly">{eur(s.yearly, 0)}</div>
+          <div class="simx__metric-label">coût annuel Signally</div>
+        </div>
+        <div>
+          <div class="simx__metric" data-sim-out="manualHours">{Math.round(s.manualHours)} h</div>
+          <div class="simx__metric-label">temps annuel en gestion manuelle</div>
+        </div>
+        <div>
+          <div class="simx__metric" data-sim-out="manualCost">{eur(s.manualCost, 0)}</div>
+          <div class="simx__metric-label">coût annuel de la gestion manuelle</div>
+        </div>
+        <div>
+          <div class="simx__metric simx__metric--gain" data-sim-out="saved">
+            {eur(Math.max(s.saved, 0), 0)}
+          </div>
+          <div class="simx__metric-label">économie estimée la première année</div>
+        </div>
+      </div>
+
+      <div class="simx__hr"></div>
+
+      <a href={APP_SIGNUP_URL} class="simx__cta" target="_blank" rel="noopener">
+        Commencer gratuitement
+      </a>
+
+      <p class="simx__disclaimer">
+        Estimation indicative, hors taxes. Le temps de gestion manuelle dépend de votre
+        organisation ; ajustez les hypothèses pour refléter votre réalité.
+      </p>
+    </div>
+  </div>
+</div>
+
+<style>
+  .simx {
+    border: 1px solid var(--line);
+    border-radius: var(--r-3xl);
+    overflow: hidden;
+  }
+
+  .simx__head {
+    background: var(--soft);
+    padding: 28px 32px;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .simx__title {
+    font-size: 30px;
+    line-height: 1.15;
+    letter-spacing: -0.02em;
+    font-weight: 800;
+    margin: 0 0 8px;
+  }
+
+  .simx__intro { font-size: 15.5px; color: var(--sec); margin: 0; }
+
+  .simx__body {
+    display: grid;
+    grid-template-columns: 1.1fr 0.9fr;
+  }
+
+  .simx__controls {
+    padding: 32px;
+    display: flex;
+    flex-direction: column;
+    gap: 26px;
+    border-right: 1px solid var(--line);
+  }
+
+  .simx__field-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 16px;
+    margin-bottom: 10px;
+  }
+
+  .simx__label { font-size: 15px; font-weight: 700; }
+
+  .simx__value {
+    font-family: var(--font-mono);
+    font-size: 22px;
+    font-weight: 700;
+    white-space: nowrap;
+  }
+  .simx__value--sm { font-size: 17px; }
+
+  .simx input[type='range'] {
+    width: 100%;
+    accent-color: var(--brand);
+    height: 6px;
+    cursor: pointer;
+  }
+
+  .simx__scale {
+    display: flex;
+    justify-content: space-between;
+    font-family: var(--font-mono);
+    font-size: 10.5px;
+    color: var(--muted);
+    margin-top: 6px;
+  }
+
+  .simx__divider { height: 1px; background: var(--line); }
+
+  .simx__section {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    color: var(--muted);
+  }
+
+  .simx__result {
+    padding: 32px;
+    background: var(--ink);
+    color: var(--white);
+    display: flex;
+    flex-direction: column;
+    gap: 22px;
+  }
+
+  .simx__result-tag {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    color: var(--brand);
+    margin-bottom: 8px;
+  }
+
+  .simx__amount {
+    font-family: var(--font-mono);
+    font-size: 42px;
+    font-weight: 700;
+    line-height: 1;
+  }
+
+  .simx__amount-note { font-size: 14px; color: var(--on-dark); margin-top: 6px; }
+
+  .simx__hr { height: 1px; background: var(--ink-3); }
+
+  .simx__metrics {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 18px;
+  }
+
+  .simx__metric {
+    font-family: var(--font-mono);
+    font-size: 22px;
+    font-weight: 700;
+  }
+  .simx__metric--gain { color: var(--brand); }
+
+  .simx__metric-label { font-size: 12.5px; color: var(--on-dark-muted); margin-top: 4px; }
+
+  .simx__cta {
+    font-size: 15px;
+    font-weight: 700;
+    padding: 14px 22px;
+    border-radius: 11px;
+    background: var(--brand);
+    color: var(--ink);
+    text-decoration: none;
+    text-align: center;
+    transition: background 0.15s ease;
+  }
+  .simx__cta:hover { background: var(--brand-strong); color: var(--ink); text-decoration: none; }
+
+  .simx__disclaimer {
+    font-size: 12px;
+    line-height: 1.55;
+    color: var(--muted);
+    margin: 0;
+  }
+
+  @media (max-width: 900px) {
+    .simx__body { grid-template-columns: 1fr; }
+    .simx__controls { border-right: 0; border-bottom: 1px solid var(--line); }
+  }
+
+  @media (max-width: 560px) {
+    .simx__head { padding: 22px; }
+    .simx__title { font-size: 24px; }
+    .simx__controls, .simx__result { padding: 22px; }
+    .simx__amount { font-size: 34px; }
+    .simx__metrics { grid-template-columns: 1fr; gap: 14px; }
+  }
+</style>
+
+<script>
+  import { initSimulators } from '../lib/sim-client';
+  initSimulators();
+</script>

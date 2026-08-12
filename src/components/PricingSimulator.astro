@@ -1,0 +1,123 @@
+---
+import { simulate, eur, DEFAULTS } from '../lib/pricing';
+
+/**
+ * Version compacte (un seul curseur) du simulateur, utilisée dans le
+ * bloc Tarifs de la page d'accueil. La page /tarifs utilise
+ * PricingSimulatorFull, qui partage le même contrat DOM et le même
+ * script client.
+ */
+
+// Rendu serveur : les montants sont corrects sans JavaScript.
+const s = simulate({ users: DEFAULTS.users });
+---
+
+<div class="sim" data-sim>
+  <div class="sim__row">
+    <label class="sim__label" for="sim-users-compact">Vos collaborateurs</label>
+    <span class="sim__value" data-sim-label="users">{s.users}</span>
+  </div>
+
+  <input
+    type="range"
+    id="sim-users-compact"
+    min="1"
+    max="2000"
+    step="1"
+    value={s.users}
+    data-sim-input="users"
+    aria-describedby="sim-compact-result"
+  />
+
+  <div class="sim__scale" aria-hidden="true">
+    <span>1</span><span>500</span><span>1000</span><span>2000</span>
+  </div>
+
+  <div class="sim__result" id="sim-compact-result">
+    <div>
+      <div class="sim__amount" data-sim-out="monthly">{eur(s.monthly)}</div>
+      <div class="sim__caption">HT par mois</div>
+    </div>
+    <div>
+      <div class="sim__rate" data-sim-out="rate">{eur(s.rate)}</div>
+      <div class="sim__caption">par utilisateur</div>
+    </div>
+  </div>
+</div>
+
+<style>
+  .sim {
+    border: 1px solid var(--line);
+    border-radius: var(--r-2xl);
+    padding: 30px;
+    background: var(--soft);
+  }
+
+  .sim__row {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 16px;
+    margin-bottom: 14px;
+  }
+
+  .sim__label { font-size: 15px; font-weight: 700; }
+
+  .sim__value {
+    font-family: var(--font-mono);
+    font-size: 22px;
+    font-weight: 700;
+  }
+
+  .sim input[type='range'] {
+    width: 100%;
+    accent-color: var(--brand);
+    height: 6px;
+    cursor: pointer;
+  }
+
+  .sim__scale {
+    display: flex;
+    justify-content: space-between;
+    font-family: var(--font-mono);
+    font-size: 10.5px;
+    color: var(--muted);
+    margin-top: 6px;
+  }
+
+  .sim__result {
+    display: flex;
+    align-items: flex-end;
+    gap: 28px;
+    flex-wrap: wrap;
+    margin-top: 26px;
+    padding-top: 24px;
+    border-top: 1px solid var(--line);
+  }
+
+  .sim__amount {
+    font-family: var(--font-mono);
+    font-size: 38px;
+    font-weight: 700;
+    line-height: 1;
+  }
+
+  .sim__rate {
+    font-family: var(--font-mono);
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--link-hover);
+  }
+
+  .sim__caption { font-size: 13px; color: var(--sec); margin-top: 6px; }
+
+  @media (max-width: 560px) {
+    .sim { padding: 22px; }
+    .sim__amount { font-size: 30px; }
+  }
+</style>
+
+<script>
+  import { initSimulators } from '../lib/sim-client';
+  initSimulators();
+</script>

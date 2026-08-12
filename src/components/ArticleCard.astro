@@ -1,0 +1,187 @@
+---
+import { CLUSTER_THEME, CLUSTER_DESC, type Cluster } from '../data/clusters';
+
+interface Props {
+  slug: string;
+  title: string;
+  cluster: Cluster;
+  keyword: string;
+  description?: string;
+  /** Décalage vertical du panneau, pour éviter des vignettes identiques. */
+  index?: number;
+}
+
+const { slug, title, cluster, keyword, description, index = 0 } = Astro.props;
+
+const theme = CLUSTER_THEME[cluster];
+const shift = (index % 3) * 14;
+const excerpt = description ?? CLUSTER_DESC[cluster];
+---
+
+<a href={`/blog/${slug}`} class="post" data-cat={cluster}>
+  <span class="post__rule"></span>
+
+  {/* Vignette générée : le prototype prévoyait un <image-slot> vide,
+      cette composition tient lieu d'illustration par défaut. */}
+  <div class="post__thumb" style={`background:${theme.bg}`} aria-hidden="true">
+    <div
+      class="post__dots"
+      style={`background-image:radial-gradient(${theme.dot} 1.4px, transparent 1.4px)`}
+    ></div>
+    <div class="post__panel-wrap">
+      <div
+        class="post__panel"
+        style={`background:${theme.panel};transform:translateY(${shift}px)`}
+      >
+        <span class="post__avatar" style={`background:${theme.bar}`}></span>
+        <span class="post__lines">
+          <span class="post__line" style={`width:74%;background:${theme.bar}`}></span>
+          <span class="post__line" style={`width:52%;opacity:.6;background:${theme.bar}`}></span>
+          <span class="post__line" style={`width:38%;opacity:.4;background:${theme.bar}`}></span>
+          <span class="post__banner"></span>
+        </span>
+      </div>
+    </div>
+    <span class="post__abbr" style={`background:${theme.tag};color:${theme.tagInk}`}>
+      {theme.abbr}
+    </span>
+  </div>
+
+  <div class="post__body">
+    <div class="post__cat">{cluster}</div>
+    <h3 class="post__title">{title}</h3>
+    <p class="post__desc">{excerpt}</p>
+    <div class="post__kw">{keyword}</div>
+  </div>
+</a>
+
+<style>
+  .post {
+    border: 1px solid var(--line);
+    border-radius: var(--r-xl);
+    text-decoration: none;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    transition: border-color 0.16s ease, transform 0.16s ease;
+  }
+  .post:hover {
+    border-color: var(--brand);
+    text-decoration: none;
+    transform: translateY(-2px);
+  }
+
+  .post__rule { height: 6px; background: var(--brand); }
+
+  .post__thumb {
+    height: 156px;
+    border-bottom: 1px solid var(--line);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .post__dots {
+    position: absolute;
+    inset: 0;
+    background-size: 9px 9px;
+  }
+
+  .post__panel-wrap {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: -16px;
+    display: flex;
+    justify-content: center;
+  }
+
+  .post__panel {
+    width: 206px;
+    border-radius: 10px 10px 0 0;
+    padding: 14px 16px 18px;
+    display: flex;
+    gap: 11px;
+    align-items: flex-start;
+    box-shadow: 0 10px 26px rgba(0, 0, 0, 0.16);
+  }
+
+  .post__avatar {
+    width: 26px;
+    height: 26px;
+    border-radius: var(--r-pill);
+    flex: 0 0 auto;
+  }
+
+  .post__lines {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    flex: 1;
+  }
+
+  .post__line { height: 6px; border-radius: var(--r-pill); display: block; }
+  .post__line + .post__line { height: 5px; }
+
+  .post__banner {
+    height: 12px;
+    width: 100%;
+    border-radius: 3px;
+    margin-top: 4px;
+    background: var(--brand);
+    display: block;
+  }
+
+  .post__abbr {
+    position: absolute;
+    top: 12px;
+    left: 14px;
+    font-family: var(--font-mono);
+    font-size: 9.5px;
+    letter-spacing: 0.14em;
+    padding: 4px 8px;
+    border-radius: var(--r-pill);
+  }
+
+  .post__body {
+    padding: 22px 26px 26px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    flex: 1;
+  }
+
+  .post__cat {
+    font-family: var(--font-mono);
+    font-size: 10.5px;
+    letter-spacing: 0.08em;
+    color: var(--muted);
+  }
+
+  .post__title {
+    font-size: 18px;
+    font-weight: 800;
+    margin: 0;
+    line-height: 1.32;
+    color: var(--ink);
+  }
+
+  .post__desc {
+    font-size: 14px;
+    line-height: 1.6;
+    color: var(--sec);
+    margin: 0;
+    flex: 1;
+  }
+
+  .post__kw {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--link-hover);
+    margin-top: 6px;
+  }
+
+  @media (max-width: 560px) {
+    .post__body { padding: 18px 20px 22px; }
+    .post__title { font-size: 16.5px; }
+  }
+</style>

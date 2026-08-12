@@ -1,0 +1,66 @@
+---
+const LOGOS = [
+  'CELANEO',
+  'TERRES DE CAFÉ',
+  'OH BABY',
+  'SINGULIER',
+  'PROGRAM STORE',
+  'MEDIA IN YOUR HANDS',
+];
+---
+
+{/* Le contenu est dupliqué : l'animation translate de -50 %, la seconde
+    copie prend exactement la place de la première, d'où la boucle sans
+    couture. La copie est aria-hidden pour ne pas être lue deux fois. */}
+<section class="marquee" aria-label="Ils utilisent Signally">
+  <div class="marquee__track">
+    <ul class="marquee__row">
+      {LOGOS.map((name) => <li>{name}</li>)}
+    </ul>
+    <ul class="marquee__row" aria-hidden="true">
+      {LOGOS.map((name) => <li>{name}</li>)}
+    </ul>
+  </div>
+</section>
+
+<style>
+  .marquee {
+    background: var(--ink-2);
+    padding: 22px 0;
+    overflow: hidden;
+  }
+
+  .marquee__track {
+    display: flex;
+    width: max-content;
+    animation: sgMarquee 26s linear infinite;
+  }
+
+  .marquee__row {
+    display: flex;
+    align-items: center;
+    gap: 56px;
+    padding-right: 56px;
+    margin: 0;
+    list-style: none;
+    font-family: var(--font-mono);
+    font-size: 15px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    color: rgba(255, 255, 255, 0.5);
+    white-space: nowrap;
+  }
+
+  .marquee:hover .marquee__track { animation-play-state: paused; }
+
+  @media (prefers-reduced-motion: reduce) {
+    /* L'override global fige l'animation à 0 % ; on rend le défilement
+       inutile en autorisant un scroll horizontal manuel. */
+    .marquee { overflow-x: auto; }
+    .marquee__track { animation: none; }
+  }
+
+  @media (max-width: 560px) {
+    .marquee__row { gap: 36px; padding-right: 36px; font-size: 13px; }
+  }
+</style>

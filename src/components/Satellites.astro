@@ -1,0 +1,69 @@
+---
+import { articlesForPillar } from '../data/clusters';
+
+/**
+ * Liste des articles satellites d'une page pilier.
+ *
+ * Règle de maillage interne définie par le prototype (page « Plan
+ * éditorial SEO ») : « Chaque page pilier liste ses articles satellites
+ * en pied de page. »
+ */
+
+interface Props {
+  pillar: string;
+  title?: string;
+}
+
+const { pillar, title = 'Aller plus loin' } = Astro.props;
+const articles = articlesForPillar(pillar);
+---
+
+{articles.length > 0 && (
+  <section class="sat">
+    <div class="container">
+      <h2 class="sat__title">{title}</h2>
+      <ul class="sat__list">
+        {articles.map((a) => (
+          <li><a href={`/blog/${a.slug}`}>{a.title}</a></li>
+        ))}
+      </ul>
+    </div>
+  </section>
+)}
+
+<style>
+  .sat {
+    background: var(--soft);
+    border-top: 1px solid var(--line);
+    padding-block: 64px;
+  }
+
+  .sat__title {
+    font-size: 22px;
+    font-weight: 800;
+    margin: 0 0 18px;
+  }
+
+  .sat__list {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px 32px;
+  }
+
+  .sat__list a {
+    font-size: 15px;
+    line-height: 1.5;
+    color: var(--ink-2);
+    text-decoration: none;
+    border-bottom: 1px solid transparent;
+  }
+  .sat__list a:hover { color: var(--link-hover); border-bottom-color: currentColor; }
+
+  @media (max-width: 768px) {
+    .sat { padding-block: 48px; }
+    .sat__list { grid-template-columns: 1fr; }
+  }
+</style>

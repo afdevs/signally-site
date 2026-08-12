@@ -1,0 +1,171 @@
+---
+/**
+ * Diagramme de Gantt « Planning des campagnes » (T1 2026).
+ * Illustration statique, comme dans le prototype.
+ */
+
+const ROWS = [
+  { team: "Toute l'entreprise", label: 'Vœux 2026', left: 2, width: 56, style: 'brand' },
+  { team: 'Commerciaux', label: 'Salon Vivatech', left: 30, width: 52, style: 'ink' },
+  { team: 'RH', label: 'Campagne recrutement', left: 52, width: 44, style: 'subtle' },
+  { team: 'Support', label: 'Nouvelle FAQ', left: 8, width: 30, style: 'muted' },
+];
+
+const STATS = [
+  { value: '4', label: 'campagnes actives' },
+  { value: '312k', label: 'impressions / trimestre' },
+  { value: '2,4 %', label: 'taux de clic moyen' },
+];
+---
+
+<div class="planner">
+  <div class="planner__head">
+    <div class="planner__title">Planning des campagnes</div>
+    <div class="planner__period">T1 2026</div>
+  </div>
+
+  <div class="planner__months" aria-hidden="true">
+    <span>JAN</span><span>FÉV</span><span>MAR</span>
+  </div>
+
+  <div class="planner__rows">
+    {ROWS.map((row) => (
+      <div class="planner__row">
+        <div class="planner__team">{row.team}</div>
+        <div class="planner__track">
+          <div
+            class:list={['planner__bar', `planner__bar--${row.style}`]}
+            style={`left:${row.left}%;width:${row.width}%`}
+          >
+            {row.label}
+          </div>
+        </div>
+      </div>
+    ))}
+  </div>
+
+  <div class="planner__stats">
+    {STATS.map((stat) => (
+      <div>
+        <div class="planner__stat-value">{stat.value}</div>
+        <div class="planner__stat-label">{stat.label}</div>
+      </div>
+    ))}
+  </div>
+</div>
+
+<style>
+  .planner {
+    background: var(--soft);
+    border: 1px solid var(--line);
+    border-radius: var(--r-2xl);
+    padding: 28px;
+  }
+
+  .planner__head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 20px;
+  }
+
+  .planner__title { font-weight: 800; font-size: 16px; }
+
+  .planner__period {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--muted);
+  }
+
+  .planner__months {
+    display: flex;
+    font-family: var(--font-mono);
+    font-size: 10.5px;
+    color: var(--muted);
+    margin-bottom: 8px;
+    padding-left: 118px;
+  }
+  .planner__months span { flex: 1; }
+
+  .planner__rows {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .planner__row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .planner__team {
+    width: 108px;
+    flex: 0 0 108px;
+    font-size: 12.5px;
+    font-weight: 600;
+    color: var(--ink-2);
+  }
+
+  .planner__track {
+    flex: 1;
+    height: 34px;
+    background: var(--white);
+    border-radius: var(--r-sm);
+    border: 1px solid var(--line);
+    position: relative;
+  }
+
+  .planner__bar {
+    position: absolute;
+    top: 3px;
+    bottom: 3px;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    padding-left: 10px;
+    font-size: 11.5px;
+    font-weight: 700;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    padding-right: 6px;
+  }
+
+  .planner__bar--brand { background: var(--brand); color: var(--ink); }
+  .planner__bar--ink { background: var(--ink); color: var(--white); }
+  .planner__bar--subtle {
+    background: var(--brand-subtle);
+    border: 1px solid var(--brand);
+    color: var(--ink);
+  }
+  .planner__bar--muted { background: var(--line); color: var(--sec); }
+
+  .planner__stats {
+    margin-top: 20px;
+    padding-top: 18px;
+    border-top: 1px solid var(--line);
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+  }
+
+  .planner__stat-value {
+    font-family: var(--font-mono);
+    font-size: 22px;
+    font-weight: 700;
+  }
+
+  .planner__stat-label { font-size: 12px; color: var(--sec); }
+
+  /* Sous 560px, la colonne d'équipes fixe étrangle les barres :
+     on repasse l'étiquette au-dessus de sa piste. */
+  @media (max-width: 560px) {
+    .planner { padding: 20px; }
+    .planner__months { padding-left: 0; }
+    .planner__row { flex-direction: column; align-items: stretch; gap: 4px; }
+    .planner__team { width: auto; flex: none; }
+    .planner__stats { grid-template-columns: 1fr; gap: 10px; }
+  }
+</style>

@@ -1,0 +1,89 @@
+---
+import type { FaqItem } from '../data/faq';
+
+interface Props {
+  items: FaqItem[];
+  /** Variante compacte utilisée dans le gabarit d'article. */
+  compact?: boolean;
+}
+
+const { items, compact = false } = Astro.props;
+---
+
+{/*
+  Le prototype gère l'ouverture via un état React-like (`toggleFaq`).
+  Ici, <details>/<summary> fait le même travail nativement : accessible
+  au clavier, annoncé correctement par les lecteurs d'écran, et
+  fonctionnel sans JavaScript. Le glyphe +/− est piloté par [open].
+*/}
+<div class:list={['faq', compact && 'faq--compact']}>
+  {items.map((item) => (
+    <details class="faq__item">
+      <summary class="faq__q">
+        <span>{item.q}</span>
+        <span class="faq__sign" aria-hidden="true"></span>
+      </summary>
+      <div class="faq__a">{item.a}</div>
+    </details>
+  ))}
+</div>
+
+<style>
+  .faq {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .faq__item {
+    background: var(--white);
+    border: 1px solid var(--line);
+    border-radius: var(--r-lg);
+    overflow: hidden;
+  }
+
+  .faq__q {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 20px;
+    width: 100%;
+    padding: 20px 24px;
+    font-size: 16.5px;
+    font-weight: 700;
+    color: var(--ink);
+    cursor: pointer;
+    list-style: none;
+    transition: background 0.15s ease;
+  }
+  .faq__q::-webkit-details-marker { display: none; }
+  .faq__q:hover { background: var(--brand-surface); }
+
+  .faq__sign {
+    font-family: var(--font-mono);
+    font-size: 18px;
+    line-height: 1;
+    color: var(--link-hover);
+    flex: 0 0 auto;
+  }
+  /* « + » fermé, « − » ouvert — comme item.sign dans le prototype. */
+  .faq__sign::before { content: '+'; }
+  .faq__item[open] .faq__sign::before { content: '\2212'; }
+
+  .faq__a {
+    padding: 0 24px 22px;
+    font-size: 15.5px;
+    line-height: 1.65;
+    color: var(--sec);
+    max-width: 760px;
+  }
+
+  /* Variante article */
+  .faq--compact .faq__q { padding: 18px 22px; font-size: 16px; }
+  .faq--compact .faq__a { padding: 0 22px 20px; font-size: 15px; }
+
+  @media (max-width: 560px) {
+    .faq__q { padding: 16px 18px; font-size: 15.5px; gap: 12px; }
+    .faq__a { padding: 0 18px 18px; font-size: 15px; }
+  }
+</style>

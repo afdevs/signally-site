@@ -1,0 +1,311 @@
+/* ============================================================
+   SIGNALLY — BASE + UTILITAIRES PARTAGÉS
+   ============================================================ */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+  /* L'en-tête est sticky : les ancres ne doivent pas passer dessous. */
+  scroll-padding-top: calc(var(--header-h) + 16px);
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--white);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  font-size: 16px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  overflow-x: hidden;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  color: inherit;
+  font-weight: 800;
+  text-wrap: balance;
+}
+
+p {
+  text-wrap: pretty;
+}
+
+a {
+  color: var(--ink);
+  text-decoration: none;
+}
+
+a:hover {
+  color: var(--link-hover);
+  text-decoration: underline;
+}
+
+img {
+  max-width: 100%;
+  height: auto;
+}
+
+::selection {
+  background: var(--brand);
+  color: var(--ink);
+}
+
+/* ---- Focus visible : absent du prototype, indispensable ici ---- */
+:focus-visible {
+  outline: 3px solid var(--brand-stronger);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* Sur fond sombre le brun doré ne ressort pas : on repasse en jaune. */
+.on-dark :focus-visible {
+  outline-color: var(--brand);
+}
+
+/* ---- Lien d'évitement ---- */
+.skip-link {
+  position: absolute;
+  left: -9999px;
+  top: 0;
+  z-index: 200;
+  background: var(--ink);
+  color: var(--white);
+  padding: 12px 20px;
+  border-radius: 0 0 var(--r-md) 0;
+  font-size: 14.5px;
+  font-weight: 700;
+}
+
+.skip-link:focus {
+  left: 0;
+  color: var(--white);
+  text-decoration: none;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* ============================================================
+   PRIMITIVES DE MISE EN PAGE
+   ============================================================ */
+
+.container {
+  max-width: var(--container);
+  margin: 0 auto;
+  padding-inline: var(--gutter);
+}
+
+.container-narrow {
+  max-width: var(--container-narrow);
+  margin: 0 auto;
+  padding-inline: var(--gutter);
+}
+
+.section {
+  padding-block: var(--section-y);
+}
+
+.section--soft { background: var(--soft); }
+.section--white { background: var(--white); }
+
+.section--dark {
+  background: var(--ink);
+  color: var(--white);
+}
+
+/* ---- Eyebrow / surtitre mono ---- */
+.eyebrow {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 14px;
+}
+
+.eyebrow--brand { color: var(--brand); }
+
+/* ---- Titres de section ---- */
+.h-section {
+  font-size: 38px;
+  line-height: 1.14;
+  letter-spacing: -0.02em;
+  font-weight: 800;
+  margin: 0;
+}
+
+.h-page {
+  font-size: 50px;
+  line-height: 1.08;
+  letter-spacing: -0.025em;
+  font-weight: 800;
+  margin: 0 0 18px;
+  max-width: 900px;
+}
+
+.lede {
+  font-size: 19px;
+  line-height: 1.55;
+  margin: 0 0 28px;
+  max-width: 720px;
+}
+
+.lede--dark { color: var(--on-dark); }
+.lede--light { color: var(--sec); }
+
+/* ============================================================
+   BOUTONS
+   ============================================================ */
+
+.btn {
+  display: inline-block;
+  font-family: var(--font-sans);
+  font-size: 16px;
+  font-weight: 700;
+  padding: 15px 26px;
+  border-radius: 12px;
+  border: 0;
+  cursor: pointer;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: background 0.16s ease, transform 0.16s ease, border-color 0.16s ease;
+}
+
+.btn:hover { text-decoration: none; }
+
+.btn--brand {
+  background: var(--brand);
+  color: var(--ink);
+}
+.btn--brand:hover {
+  background: var(--brand-strong);
+  color: var(--ink);
+}
+
+.btn--ink {
+  background: var(--ink);
+  color: var(--white);
+}
+.btn--ink:hover {
+  background: var(--ink-2);
+  color: var(--white);
+}
+
+.btn--outline-dark {
+  border: 1px solid var(--ink-4);
+  color: var(--white);
+  background: transparent;
+}
+.btn--outline-dark:hover {
+  background: var(--ink-2);
+  color: var(--white);
+}
+
+.btn--sm {
+  font-size: 15px;
+  padding: 14px 22px;
+  border-radius: 11px;
+}
+
+.btn--lift:hover { transform: translateY(-2px); }
+.btn--shadow { box-shadow: var(--shadow-cta); }
+
+/* ---- Lien fléché ---- */
+.arrow-link {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--link-hover);
+}
+
+/* ============================================================
+   CARTES & GRILLES
+   ============================================================ */
+
+.card {
+  background: var(--white);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 28px;
+}
+
+.card h3 {
+  font-size: 18px;
+  font-weight: 800;
+  margin: 0 0 8px;
+}
+
+.card p {
+  font-size: 14.5px;
+  line-height: 1.6;
+  color: var(--sec);
+  margin: 0;
+}
+
+.card--hover {
+  transition: border-color 0.16s ease, transform 0.16s ease;
+}
+.card--hover:hover {
+  border-color: var(--brand);
+  transform: translateY(-2px);
+}
+
+.grid { display: grid; gap: 22px; }
+.grid--2 { grid-template-columns: repeat(2, 1fr); }
+.grid--3 { grid-template-columns: repeat(3, 1fr); }
+.grid--4 { grid-template-columns: repeat(4, 1fr); }
+
+/* ---- Numéro d'étape ---- */
+.step-num {
+  font-family: var(--font-mono);
+  font-size: 30px;
+  font-weight: 700;
+  color: var(--brand);
+  margin-bottom: 12px;
+}
+
+/* ---- Statistique mono ---- */
+.stat-value {
+  font-family: var(--font-mono);
+  font-weight: 700;
+}
+
+/* ============================================================
+   RESPONSIVE — absent du prototype, ajouté ici
+   ============================================================ */
+
+@media (max-width: 1024px) {
+  .grid--4 { grid-template-columns: repeat(2, 1fr); }
+  .grid--3 { grid-template-columns: repeat(2, 1fr); }
+  .h-page { font-size: 40px; }
+  .h-section { font-size: 32px; }
+  .lede { font-size: 17.5px; }
+}
+
+@media (max-width: 768px) {
+  .grid--2, .grid--3, .grid--4 { grid-template-columns: 1fr; }
+  .h-page { font-size: 34px; }
+  .h-section { font-size: 28px; }
+}
+
+@media (max-width: 560px) {
+  .h-page { font-size: 29px; letter-spacing: -0.02em; }
+  .h-section { font-size: 25px; }
+  .lede { font-size: 16.5px; }
+  .btn { font-size: 15px; padding: 14px 20px; width: 100%; text-align: center; }
+}

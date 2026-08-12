@@ -1,0 +1,142 @@
+---
+import Base from '../layouts/Base.astro';
+import PageHero from '../components/PageHero.astro';
+import ContactForm from '../components/ContactForm.astro';
+import { APP_SIGNUP_URL, CONTACT_EMAIL } from '../data/nav';
+
+/**
+ * Rendue à la demande, contrairement au reste du site.
+ *
+ * Sans JavaScript, /api/contact répond par une redirection vers
+ * /contact?envoye=1 ou /contact?erreur=… : la page doit donc pouvoir
+ * lire ses paramètres de requête, ce qu'une page prérendue ne peut pas
+ * faire (l'URL est figée au build).
+ */
+export const prerender = false;
+---
+
+<Base
+  title="Contact & démonstration — parlons de votre déploiement"
+  description="Une démonstration Signally dure vingt minutes : votre annuaire, votre gabarit, votre première campagne. Écrivez-nous ou réservez un créneau."
+  path="/contact"
+>
+  <PageHero
+    eyebrow="Contact & démonstration"
+    title="Parlons de votre déploiement."
+    lede="Une démonstration dure vingt minutes : votre annuaire, votre gabarit, votre première campagne."
+    tight
+  />
+
+  <section class="contact">
+    <div class="container contact__grid">
+      <ContactForm />
+
+      <aside class="contact__side">
+        <div class="side-card side-card--soft">
+          <h2 class="side-card__title">Vous préférez essayer d'abord ?</h2>
+          <p class="side-card__text">
+            L'éditeur est ouvert : créez une signature complète, testez-la dans votre messagerie,
+            décidez ensuite.
+          </p>
+          <a href={APP_SIGNUP_URL} class="btn btn--ink btn--sm" target="_blank" rel="noopener">
+            Créer ma signature
+          </a>
+        </div>
+
+        <div class="side-card">
+          <div class="side-card__tag">SIGNALLY</div>
+          <ul class="side-card__list">
+            <li>Éditeur français de gestion de signatures d'e-mail</li>
+            <li>Données hébergées en France</li>
+            <li>Support en français, inclus dans l'abonnement</li>
+          </ul>
+          <div class="side-card__mail">
+            Écrire directement : <a href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a>
+          </div>
+          {/*
+            TODO — Signally : le prototype laisse ce bloc à compléter.
+            Adresse postale, téléphone, SIREN et contact DPO doivent venir
+            de vous ; rien n'est inventé ici.
+          */}
+          <div class="side-card__todo">
+            Bloc à compléter : adresse postale, numéro de téléphone, SIREN, contact DPO.
+          </div>
+        </div>
+      </aside>
+    </div>
+  </section>
+</Base>
+
+<style>
+  .contact { padding: 72px 0 96px; background: var(--white); }
+
+  .contact__grid {
+    display: grid;
+    grid-template-columns: 1.1fr 0.9fr;
+    gap: 56px;
+    align-items: start;
+  }
+
+  .contact__side {
+    display: flex;
+    flex-direction: column;
+    gap: 22px;
+  }
+
+  .side-card {
+    border: 1px solid var(--line);
+    border-radius: var(--r-xl);
+    padding: 28px;
+  }
+  .side-card--soft { background: var(--soft); }
+
+  .side-card__title { font-size: 19px; font-weight: 800; margin: 0 0 10px; }
+
+  .side-card__text {
+    font-size: 15px;
+    line-height: 1.6;
+    color: var(--sec);
+    margin: 0 0 16px;
+  }
+
+  .side-card__tag {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    color: var(--muted);
+    margin-bottom: 14px;
+  }
+
+  .side-card__list {
+    display: flex;
+    flex-direction: column;
+    gap: 9px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    font-size: 15px;
+    line-height: 1.5;
+    color: var(--ink-2);
+  }
+
+  .side-card__mail {
+    margin-top: 18px;
+    padding-top: 16px;
+    border-top: 1px solid var(--line);
+    font-size: 14px;
+    color: var(--sec);
+  }
+  .side-card__mail a { font-weight: 700; color: var(--link-hover); }
+
+  .side-card__todo {
+    margin-top: 14px;
+    font-size: 13px;
+    line-height: 1.55;
+    color: var(--muted);
+  }
+
+  @media (max-width: 1024px) {
+    .contact { padding: 56px 0 72px; }
+    .contact__grid { grid-template-columns: 1fr; gap: 32px; }
+  }
+</style>

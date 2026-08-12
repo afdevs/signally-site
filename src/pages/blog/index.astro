@@ -1,0 +1,197 @@
+---
+import { getCollection } from 'astro:content';
+import Base from '../../layouts/Base.astro';
+import PageHero from '../../components/PageHero.astro';
+import ArticleCard from '../../components/ArticleCard.astro';
+import { CLUSTERS, PLANNED_ARTICLES, type Cluster } from '../../data/clusters';
+
+const published = (await getCollection('blog', ({ data }) => !data.draft)).sort(
+  (a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf()
+);
+
+// Le plan éditorial est la source de l'ordre et de la couverture ; on
+// n'affiche que les articles effectivement rédigés.
+const bySlug = new Map(published.map((entry) => [entry.id, entry]));
+const posts = PLANNED_ARTICLES.flatMap((planned) => {
+  const entry = bySlug.get(planned.slug);
+  return entry
+    ? [{
+        slug: planned.slug,
+        title: entry.data.title,
+        cluster: entry.data.cluster,
+        keyword: entry.data.keyword,
+        description: entry.data.description,
+      }]
+    : [];
+});
+
+const counts = new Map<Cluster, number>();
+for (const post of posts) counts.set(post.cluster, (counts.get(post.cluster) ?? 0) + 1);
+
+const filters: { label: string; value: string; count: number }[] = [
+  { label: 'Toutes', value: 'all', count: posts.length },
+  ...CLUSTERS.filter((c) => counts.has(c)).map((c) => ({
+    label: c,
+    value: c,
+    count: counts.get(c) ?? 0,
+  })),
+];
+---
+
+<Base
+  title="Blog — tout sur la signature mail en entreprise"
+  description="Guides pratiques, tutoriels Microsoft 365 et Google Workspace, cadrage RGPD et idées de campagnes de bannières. Le blog Signally."
+  path="/blog"
+>
+  <PageHero
+    eyebrow="Le blog Signally"
+    title="Tout sur la signature mail : gestion, déploiement, conformité et communication."
+    lede="Guides pratiques, tutoriels Microsoft 365 et Google Workspace, cadrage RGPD et idées de campagnes. Quarante articles organisés en sept piliers thématiques."
+    tight
+  />
+
+  <section class="blog">
+    <div class="container">
+      <div class="filters" role="group" aria-label="Filtrer par thématique">
+        {filters.map((f, i) => (
+          <button
+            type="button"
+            class="chip"
+            data-filter={f.value}
+            aria-pressed={i === 0 ? 'true' : 'false'}
+          >
+            {f.label}
+            <span class="chip__count">{f.count}</span>
+          </button>
+        ))}
+      </div>
+
+      <p class="results" data-results aria-live="polite">
+        {posts.length} article{posts.length > 1 ? 's' : ''}
+      </p>
+
+      {posts.length > 0 ? (
+        <div class="posts" data-posts>
+          {posts.map((post, i) => <ArticleCard {...post} index={i} />)}
+        </div>
+      ) : (
+        <p class="empty">Les premiers articles arrivent très bientôt.</p>
+      )}
+
+      <p class="empty" data-empty hidden>Aucun article dans cette thématique pour le moment.</p>
+    </div>
+  </section>
+</Base>
+
+<style>
+  .blog { padding: 40px 0 96px; background: var(--white); }
+
+  .filters {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    padding: 24px 0 32px;
+    border-bottom: 1px solid var(--line);
+    margin-bottom: 24px;
+  }
+
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-family: var(--font-sans);
+    font-size: 13.5px;
+    font-weight: 700;
+    padding: 9px 16px;
+    border-radius: var(--r-pill);
+    cursor: pointer;
+    border: 1px solid var(--line);
+    background: var(--white);
+    color: var(--ink-2);
+    transition: all 0.15s ease;
+  }
+  .chip:hover { border-color: var(--ink); }
+  .chip[aria-pressed='true'] {
+    background: var(--ink);
+    border-color: var(--ink);
+    color: var(--white);
+  }
+
+  .chip__count {
+    font-family: var(--font-mono);
+    font-size: 10.5px;
+    opacity: 0.65;
+  }
+
+  .results {
+    font-family: var(--font-mono);
+    font-size: 11.5px;
+    letter-spacing: 0.06em;
+    color: var(--muted);
+    margin: 0 0 24px;
+  }
+
+  .posts {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 24px;
+  }
+
+  .empty {
+    font-size: 16px;
+    color: var(--sec);
+    padding: 32px 0;
+  }
+  .empty[hidden] { display: none; }
+
+  @media (max-width: 1024px) {
+    .posts { grid-template-columns: repeat(2, 1fr); }
+  }
+
+  @media (max-width: 680px) {
+    .blog { padding: 24px 0 64px; }
+    .posts { grid-template-columns: 1fr; }
+  }
+</style>
+
+<script>
+  const chips = Array.from(document.querySelectorAll<HTMLButtonElement>('[data-filter]'));
+  const cards = Array.from(document.querySelectorAll<HTMLElement>('[data-cat]'));
+  const results = document.querySelector<HTMLElement>('[data-results]');
+  const empty = document.querySelector<HTMLElement>('[data-empty]');
+
+  function apply(value: string, pushState: boolean) {
+    let visible = 0;
+
+    for (const card of cards) {
+      const match = value === 'all' || card.dataset.cat === value;
+      card.hidden = !match;
+      if (match) visible += 1;
+    }
+
+    for (const chip of chips) {
+      chip.setAttribute('aria-pressed', String(chip.dataset.filter === value));
+    }
+
+    if (results) {
+      results.textContent = `${visible} article${visible > 1 ? 's' : ''}`;
+    }
+    if (empty) empty.hidden = visible > 0;
+
+    // La sélection est reflétée dans l'URL : une vue filtrée est partageable.
+    if (pushState) {
+      const url = new URL(window.location.href);
+      if (value === 'all') url.searchParams.delete('cat');
+      else url.searchParams.set('cat', value);
+      history.replaceState(null, '', url);
+    }
+  }
+
+  for (const chip of chips) {
+    chip.addEventListener('click', () => apply(chip.dataset.filter!, true));
+  }
+
+  // Restaure ?cat= au chargement.
+  const initial = new URL(window.location.href).searchParams.get('cat');
+  if (initial && chips.some((c) => c.dataset.filter === initial)) apply(initial, false);
+</script>
