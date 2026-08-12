@@ -25,6 +25,7 @@ npm run dev               # http://localhost:4322
 | `npm run check:links` | Vérifie le maillage interne et les liens du build |
 | `npm run check:responsive` | Planche contact du rendu mobile (nécessite le serveur démarré) |
 | `npm run check:mail` | Teste la configuration d'envoi (`-- --send` pour un envoi réel) |
+| `npm run deploy` | Déploie : build, redémarrage PM2, vérification, retour arrière |
 
 ---
 
@@ -48,7 +49,7 @@ src/
   lib/          pricing.ts, mail.ts, contact-schema.ts, rate-limit.ts
   pages/        les 13 routes + /api/contact
   styles/       tokens.css, global.css
-scripts/        check-links.mjs, check-responsive.mjs, check-mail.mjs
+scripts/        deploy.sh, check-links.mjs, check-responsive.mjs, check-mail.mjs
 ecosystem.config.cjs   configuration PM2
 ```
 
@@ -176,7 +177,7 @@ Les deux sont nécessaires : `dist/client/` seul ne saurait pas envoyer le formu
 
 ```bash
 NODE_ENV=production \
-HOST=0.0.0.0 \
+HOST=127.0.0.1 \
 PORT=4322 \
 MAILER_DSN='sendgrid://VOTRE_CLE@default' \
 MAIL_FROM='Signally <no-reply@signally.io>' \
@@ -228,7 +229,34 @@ pm2 stop signally-site
 pm2 delete signally-site
 ```
 
-Déploiement d'une nouvelle version :
+### 4. Déployer une nouvelle version
+
+```bash
+npm run deploy                       # récupère, construit, redémarre, vérifie
+npm run deploy -- --no-pull          # déploie le code déjà présent
+npm run deploy -- --no-install       # saute npm ci si les dépendances n'ont pas bougé
+```
+
+`scripts/deploy.sh` enchaîne les étapes dans l'ordre qui préserve le service :
+
+1. **Contrôles préalables** — node, npm et pm2 présents, Node 18+, `.env` complet
+   (`MAILER_DSN`, `MAIL_FROM`, `MAIL_TO`) et correctement restreint. Le port de la vérification
+   est lu dans `ecosystem.config.cjs`, jamais codé en dur.
+2. **`git pull --ff-only`** — refusé si l'arbre de travail est modifié, pour ne jamais déployer
+   un état local non versionné.
+3. **`npm ci`**, puis **build**. La version en ligne est sauvegardée avant compilation.
+4. **Redémarrage PM2** — uniquement si le build a réussi.
+5. **Vérification de santé** — jusqu'à 15 tentatives : HTTP 200 sur `/` *et* process `online`.
+   Puis deux contrôles informatifs, `/contact` et une URL inconnue attendue en 404.
+
+Le build a lieu **avant** toute interruption : une compilation qui échoue laisse le site en ligne
+sur la version précédente, et le script sort en code 1 sans avoir touché à PM2.
+
+Si la vérification de santé échoue après redémarrage, le script **restaure automatiquement** la
+version précédente, relance PM2, revérifie, et signale le résultat réel de cette restauration
+plutôt que de conclure au succès.
+
+Le déploiement manuel reste possible :
 
 ```bash
 git pull && npm ci && npm run build && pm2 restart signally-site --update-env
@@ -246,7 +274,7 @@ déjà définie. Aucun secret ne figure dans `ecosystem.config.cjs`, qui est ver
 
 Les journaux sont écrits dans `logs/`, ignoré par git.
 
-### 4. Reverse proxy
+### 5. Reverse proxy
 
 ```nginx
 server {
@@ -270,7 +298,7 @@ server {
 }
 ```
 
-### 5. Vérifier la mise en production
+### 6. Vérifier la mise en production
 
 ```bash
 curl -I https://www.signally.io/                    # 200
