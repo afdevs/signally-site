@@ -9,8 +9,8 @@
 export const APP_URL = 'https://app.signally.io';
 export const APP_LOGIN_URL = 'https://app.signally.io/login';
 
-/** Destination du CTA « Créer ma signature ». */
-export const APP_SIGNUP_URL = APP_URL;
+/** Destination du CTA « Créer ma signature » : l'éditeur de gabarits. */
+export const APP_SIGNUP_URL = `${APP_URL}/templates`;
 
 export const CONTACT_EMAIL = 'contacts@signally.io';
 
