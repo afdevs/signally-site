@@ -4,6 +4,11 @@ import { z } from 'zod';
  * Schéma du formulaire de démonstration.
  * Partagé par l'API et le script client, pour que les messages
  * d'erreur soient rigoureusement les mêmes des deux côtés.
+ *
+ * Les messages sont injectés plutôt qu'écrits en dur : le visiteur doit
+ * lire ses erreurs dans la langue de la page. Les valeurs d'environnement,
+ * elles, restent en français — ce sont des identifiants transmis au mail
+ * interne, pas du texte affiché : le formulaire en montre la traduction.
  */
 
 export const ENVIRONMENTS = [
@@ -13,42 +18,53 @@ export const ENVIRONMENTS = [
   'Autre',
 ] as const;
 
-export const contactSchema = z.object({
+export type ContactMessages = {
+  name: string;
+  emailRequired: string;
+  emailInvalid: string;
+  company: string;
+  environment: string;
+  message: string;
+  tooLong: string;
+};
+
+export function makeContactSchema(m: ContactMessages) {
+  return z.object({
   name: z
     .string()
     .trim()
-    .min(2, 'Indiquez votre prénom et votre nom.')
-    .max(120, 'Ce champ est trop long.'),
+    .min(2, m.name)
+    .max(120, m.tooLong),
 
   email: z
     .string()
     .trim()
-    .min(1, 'Indiquez votre e-mail professionnel.')
-    .max(180, 'Cette adresse est trop longue.')
-    .email("Cette adresse e-mail n'est pas valide."),
+    .min(1, m.emailRequired)
+    .max(180, m.tooLong)
+    .email(m.emailInvalid),
 
   company: z
     .string()
     .trim()
-    .min(2, "Indiquez le nom de votre entreprise.")
-    .max(150, 'Ce champ est trop long.'),
+    .min(2, m.company)
+    .max(150, m.tooLong),
 
   headcount: z
     .string()
     .trim()
-    .max(60, 'Ce champ est trop long.')
+    .max(60, m.tooLong)
     .optional()
     .or(z.literal('')),
 
   environment: z.enum(ENVIRONMENTS, {
-    errorMap: () => ({ message: 'Choisissez un environnement de messagerie.' }),
+    errorMap: () => ({ message: m.environment }),
   }),
 
   message: z
     .string()
     .trim()
-    .min(10, 'Décrivez votre besoin en quelques mots (10 caractères minimum).')
-    .max(5000, 'Votre message dépasse 5 000 caractères.'),
+    .min(10, m.message)
+    .max(5000, m.tooLong),
 
   /**
    * Pot de miel : champ invisible pour un humain.
@@ -62,9 +78,10 @@ export const contactSchema = z.object({
 
   /** Horodatage d'affichage du formulaire, en millisecondes. */
   ts: z.coerce.number().optional(),
-});
+  });
+}
 
-export type ContactInput = z.infer<typeof contactSchema>;
+export type ContactInput = z.infer<ReturnType<typeof makeContactSchema>>;
 
 /** Délai minimal entre l'affichage du formulaire et l'envoi. */
 export const MIN_FILL_MS = 3000;

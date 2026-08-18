@@ -1,24 +1,39 @@
 ---
-import { CLUSTER_THEME, CLUSTER_DESC, type Cluster } from '../data/clusters';
+import { CLUSTER_THEME, type Cluster } from '../data/clusters';
+import { getDictionary } from '../i18n';
+import { localeFromPath, type Locale } from '../i18n/config';
 
 interface Props {
-  slug: string;
+  /** URL déjà localisée de l'article. */
+  href: string;
   title: string;
   cluster: Cluster;
   keyword: string;
   description?: string;
   /** Décalage vertical du panneau, pour éviter des vignettes identiques. */
   index?: number;
+  locale?: Locale;
 }
 
-const { slug, title, cluster, keyword, description, index = 0 } = Astro.props;
+const {
+  href,
+  title,
+  cluster,
+  keyword,
+  description,
+  index = 0,
+  locale = localeFromPath(Astro.url.pathname),
+} = Astro.props;
 
+const t = getDictionary(locale).blog;
 const theme = CLUSTER_THEME[cluster];
 const shift = (index % 3) * 14;
-const excerpt = description ?? CLUSTER_DESC[cluster];
+const excerpt = description ?? t.clusterDesc[cluster];
+/** `data-cat` reste la clé technique : c'est elle que filtre le script. */
+const clusterLabel = t.clusters[cluster];
 ---
 
-<a href={`/blog/${slug}`} class="post" data-cat={cluster}>
+<a href={href} class="post" data-cat={cluster}>
   <span class="post__rule"></span>
 
   {/* Vignette générée : le prototype prévoyait un <image-slot> vide,
@@ -48,7 +63,7 @@ const excerpt = description ?? CLUSTER_DESC[cluster];
   </div>
 
   <div class="post__body">
-    <div class="post__cat">{cluster}</div>
+    <div class="post__cat">{clusterLabel}</div>
     <h3 class="post__title">{title}</h3>
     <p class="post__desc">{excerpt}</p>
     <div class="post__kw">{keyword}</div>

@@ -8,49 +8,6 @@
 
 export type FaqItem = { q: string; a: string };
 
-export const homeFaq: FaqItem[] = [
-  {
-    q: "Comment mettre en place une signature mail identique pour tous les collaborateurs ?",
-    a: "Vous créez un gabarit unique dans l'éditeur Signally, vous y placez des champs dynamiques (nom, fonction, téléphone, service) et vous l'attribuez à une équipe ou à toute l'entreprise. L'add-in Microsoft 365 ou Google Workspace applique ensuite la signature à chaque collaborateur, sans qu'il ait la moindre manipulation à faire.",
-  },
-  {
-    q: "Signally lit-il le contenu de mes e-mails ?",
-    a: "Non. L'add-in insère un bloc de signature au moment de la rédaction du message. Il n'accède pas au corps de vos e-mails, ne les analyse pas et ne les stocke pas. Aucun contenu d'e-mail ne transite par nos serveurs.",
-  },
-  {
-    q: "Mes e-mails sont-ils envoyés par Signally ?",
-    a: "Non, jamais. Vos messages partent depuis votre propre compte Microsoft 365 ou Google Workspace, avec votre domaine, votre délivrabilité et vos règles de sécurité. Signally n'est pas un relais d'envoi : nous ajoutons uniquement la signature.",
-  },
-  {
-    q: "Où sont hébergées les données de Signally ?",
-    a: "En France. Les données d'annuaire, les gabarits et les visuels de campagne sont stockés sur des serveurs situés sur le territoire français, soumis au RGPD et au droit européen.",
-  },
-  {
-    q: "Puis-je créer une signature mail gratuitement ?",
-    a: "Oui. Le générateur de signature est accessible librement sur app.signally.io : vous créez votre signature, vous la testez et vous l'installez dans votre client de messagerie sans carte bancaire. L'abonnement ne devient nécessaire que pour le déploiement automatique et les campagnes.",
-  },
-  {
-    q: "Combien coûte Signally pour 100 collaborateurs ?",
-    a: "Le tarif est dégressif : 1,50 € HT par utilisateur et par mois jusqu'à 10 utilisateurs, 1,25 € de 11 à 50, 1,00 € de 51 à 100, 0,75 € de 101 à 500 et 0,50 € au-delà de 500. Pour 100 collaborateurs, comptez 100 € HT par mois. Le simulateur de la page Tarifs calcule votre montant exact.",
-  },
-  {
-    q: "Combien de temps prend le déploiement dans une entreprise ?",
-    a: "L'installation de l'add-in depuis votre console d'administration prend une dizaine de minutes. La création du gabarit et le rattachement des équipes prennent en général une demi-journée. Vous êtes opérationnel le jour même.",
-  },
-  {
-    q: "Qu'est-ce qu'une campagne de bannière dans une signature mail ?",
-    a: "C'est une bannière — animée ou statique, cliquable — ajoutée sous la signature de tout ou partie de vos collaborateurs, sur une période que vous planifiez à l'avance. Elle transforme chaque e-mail sortant en support de communication : événement, recrutement, lancement produit, enquête de satisfaction.",
-  },
-  {
-    q: "La signature s'affiche-t-elle correctement sur Outlook, Gmail et mobile ?",
-    a: "Oui. Les gabarits Signally sont conçus en HTML compatible avec Outlook Windows et Mac, Outlook Web, Gmail, Apple Mail et les clients mobiles iOS et Android. Chaque gabarit est prévisualisable avant déploiement.",
-  },
-  {
-    q: "Peut-on avoir des signatures différentes par filiale ou par marque ?",
-    a: "Oui. Vous créez autant de gabarits que nécessaire et vous les attribuez par équipe, service, filiale ou unité organisationnelle. Chaque entité conserve son identité visuelle, dans un seul et même compte d'administration.",
-  },
-];
-
 export const featuresFaq: FaqItem[] = [
   {
     q: "Comment créer une signature mail professionnelle ?",

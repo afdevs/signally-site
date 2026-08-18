@@ -1,6 +1,8 @@
 ---
 import { ENVIRONMENTS } from '../lib/contact-schema';
 import { CONTACT_EMAIL } from '../data/nav';
+import { getDictionary } from '../i18n';
+import { localeFromPath, type Locale } from '../i18n/config';
 
 /**
  * Formulaire de demande de démonstration.
@@ -9,29 +11,47 @@ import { CONTACT_EMAIL } from '../data/nav';
  * navigateur poste normalement et l'API répond par une redirection.
  * Avec JavaScript, le script intercepte, poste en JSON et affiche les
  * erreurs champ par champ sans recharger la page.
+ *
+ * Un champ caché transporte la langue jusqu'à l'API, qui doit à la fois
+ * renvoyer ses messages d'erreur dans cette langue et rediriger vers la
+ * bonne page de contact — /es/contacto et non /contact.
  */
+
+interface Props {
+  /** Déduite de l'URL par défaut : les pages n'ont pas à la passer. */
+  locale?: Locale;
+}
+
+const { locale = localeFromPath(Astro.url.pathname) } = Astro.props;
+const t = getDictionary(locale).contact.form;
 
 const { searchParams } = Astro.url;
 const sent = searchParams.get('envoye') === '1';
 const errorCode = searchParams.get('erreur');
 
-const ERRORS: Record<string, string> = {
-  validation: 'Certains champs sont incomplets ou invalides. Vérifiez le formulaire.',
-  frequence: 'Trop de demandes envoyées depuis cette adresse. Réessayez dans quelques minutes.',
-  envoi: `L'envoi a échoué. Réessayez dans un instant ou écrivez-nous à ${CONTACT_EMAIL}.`,
-  format: "La demande n'a pas pu être lue. Réessayez.",
+const ALERTS: Record<string, string> = {
+  validation: t.alerts.validation,
+  frequence: t.alerts.frequence,
+  envoi: `${t.alerts.envoi} ${CONTACT_EMAIL}.`,
+  format: t.alerts.format,
 };
-const errorMessage = errorCode ? (ERRORS[errorCode] ?? ERRORS.envoi) : null;
+const errorMessage = errorCode ? (ALERTS[errorCode] ?? ALERTS.envoi) : null;
+
+/** Les valeurs restent en français : seul le libellé affiché est traduit. */
+const environmentOptions = ENVIRONMENTS.map((value, index) => ({
+  value,
+  label: t.environments[index],
+}));
 ---
 
 <div class="form-card">
-  <h2 class="form-card__title">Demander une démonstration</h2>
+  <h2 class="form-card__title">{t.title}</h2>
 
   <!-- Panneau de succès : affiché après une soumission sans JavaScript,
        et réutilisé par le script après une réponse JSON positive. -->
   <div class="alert alert--ok" data-success hidden={!sent} role="status">
-    <strong>Message envoyé.</strong>
-    Nous revenons vers vous sous un jour ouvré, à l'adresse indiquée.
+    <strong>{t.successTitle}</strong>
+    {t.successText}
   </div>
 
   <div class="alert alert--error" data-error hidden={!errorMessage} role="alert">
@@ -43,48 +63,52 @@ const errorMessage = errorCode ? (ERRORS[errorCode] ?? ERRORS.envoi) : null;
     action="/api/contact"
     novalidate
     data-contact-form
+    data-submitting-label={t.submitting}
+    data-error-validation={t.alerts.validation}
+    data-error-send={`${t.alerts.envoi} ${CONTACT_EMAIL}.`}
+    data-error-network={`${t.alerts.network} ${CONTACT_EMAIL}.`}
     hidden={sent}
   >
     <div class="fields">
       <div class="field">
-        <label for="name">Prénom et nom</label>
-        <input type="text" id="name" name="name" placeholder="Camille Durand" autocomplete="name" required />
+        <label for="name">{t.fields.name.label}</label>
+        <input type="text" id="name" name="name" placeholder={t.fields.name.placeholder} autocomplete="name" required />
         <p class="field__error" data-error-for="name" hidden></p>
       </div>
 
       <div class="field">
-        <label for="email">E-mail professionnel</label>
-        <input type="email" id="email" name="email" placeholder="camille@entreprise.fr" autocomplete="email" required />
+        <label for="email">{t.fields.email.label}</label>
+        <input type="email" id="email" name="email" placeholder={t.fields.email.placeholder} autocomplete="email" required />
         <p class="field__error" data-error-for="email" hidden></p>
       </div>
 
       <div class="field">
-        <label for="company">Entreprise</label>
-        <input type="text" id="company" name="company" placeholder="Nom de l'entreprise" autocomplete="organization" required />
+        <label for="company">{t.fields.company.label}</label>
+        <input type="text" id="company" name="company" placeholder={t.fields.company.placeholder} autocomplete="organization" required />
         <p class="field__error" data-error-for="company" hidden></p>
       </div>
 
       <div class="field">
-        <label for="headcount">Nombre de collaborateurs</label>
-        <input type="text" id="headcount" name="headcount" placeholder="120" inputmode="numeric" />
+        <label for="headcount">{t.fields.headcount.label}</label>
+        <input type="text" id="headcount" name="headcount" placeholder={t.fields.headcount.placeholder} inputmode="numeric" />
         <p class="field__error" data-error-for="headcount" hidden></p>
       </div>
 
       <div class="field field--full">
-        <label for="environment">Environnement de messagerie</label>
+        <label for="environment">{t.fields.environment.label}</label>
         <select id="environment" name="environment" required>
-          {ENVIRONMENTS.map((env) => <option value={env}>{env}</option>)}
+          {environmentOptions.map((env) => <option value={env.value}>{env.label}</option>)}
         </select>
         <p class="field__error" data-error-for="environment" hidden></p>
       </div>
 
       <div class="field field--full">
-        <label for="message">Votre besoin</label>
+        <label for="message">{t.fields.message.label}</label>
         <textarea
           id="message"
           name="message"
           rows="4"
-          placeholder="Unifier les signatures de trois filiales et lancer une campagne de recrutement."
+          placeholder={t.fields.message.placeholder}
           required></textarea>
         <p class="field__error" data-error-for="message" hidden></p>
       </div>
@@ -92,17 +116,15 @@ const errorMessage = errorCode ? (ERRORS[errorCode] ?? ERRORS.envoi) : null;
 
     {/* Pot de miel : hors flux, invisible, ignoré par la saisie clavier. */}
     <div class="honeypot" aria-hidden="true">
-      <label for="website">Ne remplissez pas ce champ</label>
+      <label for="website">{t.honeypot}</label>
       <input type="text" id="website" name="website" tabindex="-1" autocomplete="off" />
     </div>
     <input type="hidden" name="ts" data-ts value="0" />
+    <input type="hidden" name="locale" value={locale} />
 
-    <button type="submit" class="form-card__submit" data-submit>Demander ma démo</button>
+    <button type="submit" class="form-card__submit" data-submit>{t.submit}</button>
 
-    <p class="form-card__legal">
-      Vos coordonnées servent uniquement à traiter votre demande. Elles sont hébergées en France et
-      ne sont jamais cédées.
-    </p>
+    <p class="form-card__legal">{t.legal}</p>
   </form>
 </div>
 
@@ -282,7 +304,7 @@ const errorMessage = errorCode ? (ERRORS[errorCode] ?? ERRORS.envoi) : null;
 
       submit.disabled = true;
       const label = submit.textContent;
-      submit.textContent = 'Envoi en cours…';
+      submit.textContent = form.dataset.submittingLabel!;
 
       const payload = Object.fromEntries(new FormData(form));
 
@@ -304,17 +326,12 @@ const errorMessage = errorCode ? (ERRORS[errorCode] ?? ERRORS.envoi) : null;
 
         if (result.errors) {
           showFieldErrors(result.errors);
-          showError('Certains champs sont incomplets ou invalides.');
+          showError(form.dataset.errorValidation!);
         } else {
-          showError(
-            result.error ??
-              "L'envoi a échoué. Réessayez ou écrivez-nous à contacts@signally.io."
-          );
+          showError(result.error ?? form.dataset.errorSend!);
         }
       } catch {
-        showError(
-          'Connexion impossible. Vérifiez votre réseau, ou écrivez-nous à contacts@signally.io.'
-        );
+        showError(form.dataset.errorNetwork!);
       } finally {
         submit.disabled = false;
         submit.textContent = label;

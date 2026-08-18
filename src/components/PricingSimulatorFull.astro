@@ -1,26 +1,41 @@
 ---
 import { simulate, eur, DEFAULTS } from '../lib/pricing';
 import { APP_SIGNUP_URL } from '../data/nav';
+import { getDictionary } from '../i18n';
+import { LOCALE_META, localeFromPath, type Locale } from '../i18n/config';
+
+interface Props {
+  /** Déduite de l'URL par défaut : les pages n'ont pas à la passer. */
+  locale?: Locale;
+}
+
+const { locale = localeFromPath(Astro.url.pathname) } = Astro.props;
+const t = getDictionary(locale).pricing.simulator;
+const intlLocale = LOCALE_META[locale].intlLocale;
+const money = (value: number, digits = 2) => eur(value, digits, intlLocale);
 
 const s = simulate({ ...DEFAULTS });
 
 const sliders = [
-  { key: 'users', id: 'sim-users', label: 'Nombre de collaborateurs', min: 1, max: 2000, step: 1, value: s.users, display: String(s.users), big: true },
-  { key: 'updates', id: 'sim-updates', label: 'Modifications de signature par an', min: 1, max: 12, step: 1, value: s.updates, display: String(s.updates), big: false },
-  { key: 'minutes', id: 'sim-minutes', label: 'Minutes passées par signature', min: 2, max: 45, step: 1, value: s.minutes, display: `${s.minutes} min`, big: false },
-  { key: 'hourly', id: 'sim-hourly', label: 'Coût horaire chargé', min: 20, max: 120, step: 5, value: s.hourly, display: `${s.hourly} €`, big: false },
+  { key: 'users', id: 'sim-users', label: t.sliders.users, min: 1, max: 2000, step: 1, value: s.users, display: String(s.users) },
+  { key: 'updates', id: 'sim-updates', label: t.sliders.updates, min: 1, max: 12, step: 1, value: s.updates, display: String(s.updates) },
+  { key: 'minutes', id: 'sim-minutes', label: t.sliders.minutes, min: 2, max: 45, step: 1, value: s.minutes, display: `${s.minutes} ${t.units.minutes}` },
+  { key: 'hourly', id: 'sim-hourly', label: t.sliders.hourly, min: 20, max: 120, step: 5, value: s.hourly, display: money(s.hourly, 0) },
 ];
 
 const [usersSlider, ...assumptionSliders] = sliders;
 ---
 
-<div class="simx" data-sim>
+<div
+  class="simx"
+  data-sim
+  data-sim-locale={intlLocale}
+  data-sim-unit-minutes={t.units.minutes}
+  data-sim-unit-hours={t.units.hours}
+>
   <div class="simx__head">
-    <h2 class="simx__title">Simulateur de coût</h2>
-    <p class="simx__intro">
-      Ajustez le nombre de collaborateurs et vos hypothèses internes : le simulateur compare le coût
-      de Signally au temps passé à gérer les signatures à la main.
-    </p>
+    <h2 class="simx__title">{t.title}</h2>
+    <p class="simx__intro">{t.intro}</p>
   </div>
 
   <div class="simx__body">
@@ -46,7 +61,7 @@ const [usersSlider, ...assumptionSliders] = sliders;
       </div>
 
       <div class="simx__divider"></div>
-      <div class="simx__section">HYPOTHÈSES DE GESTION MANUELLE</div>
+      <div class="simx__section">{t.assumptions}</div>
 
       {assumptionSliders.map((slider) => (
         <div class="simx__field">
@@ -70,10 +85,10 @@ const [usersSlider, ...assumptionSliders] = sliders;
 
     <div class="simx__result on-dark" id="simx-result" aria-live="polite">
       <div>
-        <div class="simx__result-tag">VOTRE TARIF</div>
-        <div class="simx__amount" data-sim-out="monthly">{eur(s.monthly)}</div>
+        <div class="simx__result-tag">{t.resultTag}</div>
+        <div class="simx__amount" data-sim-out="monthly">{money(s.monthly)}</div>
         <div class="simx__amount-note">
-          HT par mois — soit <span data-sim-out="rate">{eur(s.rate)}</span> par utilisateur
+          {t.perMonth} {t.amountNoteJoin} <span data-sim-out="rate">{money(s.rate)}</span> {t.perUser}
         </div>
       </div>
 
@@ -81,35 +96,34 @@ const [usersSlider, ...assumptionSliders] = sliders;
 
       <div class="simx__metrics">
         <div>
-          <div class="simx__metric" data-sim-out="yearly">{eur(s.yearly, 0)}</div>
-          <div class="simx__metric-label">coût annuel Signally</div>
+          <div class="simx__metric" data-sim-out="yearly">{money(s.yearly, 0)}</div>
+          <div class="simx__metric-label">{t.metrics.yearly}</div>
         </div>
         <div>
-          <div class="simx__metric" data-sim-out="manualHours">{Math.round(s.manualHours)} h</div>
-          <div class="simx__metric-label">temps annuel en gestion manuelle</div>
+          <div class="simx__metric" data-sim-out="manualHours">
+            {Math.round(s.manualHours)} {t.units.hours}
+          </div>
+          <div class="simx__metric-label">{t.metrics.manualHours}</div>
         </div>
         <div>
-          <div class="simx__metric" data-sim-out="manualCost">{eur(s.manualCost, 0)}</div>
-          <div class="simx__metric-label">coût annuel de la gestion manuelle</div>
+          <div class="simx__metric" data-sim-out="manualCost">{money(s.manualCost, 0)}</div>
+          <div class="simx__metric-label">{t.metrics.manualCost}</div>
         </div>
         <div>
           <div class="simx__metric simx__metric--gain" data-sim-out="saved">
-            {eur(Math.max(s.saved, 0), 0)}
+            {money(Math.max(s.saved, 0), 0)}
           </div>
-          <div class="simx__metric-label">économie estimée la première année</div>
+          <div class="simx__metric-label">{t.metrics.saved}</div>
         </div>
       </div>
 
       <div class="simx__hr"></div>
 
       <a href={APP_SIGNUP_URL} class="simx__cta" target="_blank" rel="noopener">
-        Commencer gratuitement
+        {t.cta}
       </a>
 
-      <p class="simx__disclaimer">
-        Estimation indicative, hors taxes. Le temps de gestion manuelle dépend de votre
-        organisation ; ajustez les hypothèses pour refléter votre réalité.
-      </p>
+      <p class="simx__disclaimer">{t.disclaimer}</p>
     </div>
   </div>
 </div>

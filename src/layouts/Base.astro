@@ -9,6 +9,15 @@ import '../styles/global.css';
 import Header from '../components/Header.astro';
 import Footer from '../components/Footer.astro';
 import { SITE, APP_URL, CONTACT_EMAIL } from '../data/nav';
+import { getDictionary } from '../i18n';
+import {
+  DEFAULT_LOCALE,
+  LOCALE_META,
+  PUBLISHED_LOCALES,
+  localeFromPath,
+  type Locale,
+} from '../i18n/config';
+import { pageKeyOf, localizedPath, localesWithPage } from '../i18n/routes';
 
 interface Props {
   title: string;
@@ -19,6 +28,14 @@ interface Props {
   /** Données structurées supplémentaires (FAQPage, Article, HowTo…). */
   jsonLd?: Record<string, unknown>[];
   ogType?: 'website' | 'article';
+  /** Langue de la page. Déduite de l'URL si elle n'est pas passée. */
+  locale?: Locale;
+  /**
+   * Équivalents linguistiques, pour les pages absentes de la table de
+   * routes — les articles de blog, dont le slug est propre à chaque
+   * langue. Les autres pages sont appariées automatiquement.
+   */
+  alternates?: Partial<Record<Locale, string>>;
 }
 
 const {
@@ -28,12 +45,33 @@ const {
   noindex = false,
   jsonLd = [],
   ogType = 'website',
+  locale = localeFromPath(Astro.url.pathname),
+  alternates,
 } = Astro.props;
+
+const { common, seo } = getDictionary(locale);
+const meta = LOCALE_META[locale];
 
 const canonicalPath = path ?? Astro.url.pathname;
 const canonical = new URL(canonicalPath, SITE.url).href;
 const fullTitle = title.includes(SITE.name) ? title : `${title} — ${SITE.name}`;
 const ogImage = new URL('/og-default.png', SITE.url).href;
+
+/**
+ * Alternatives linguistiques réellement publiées. On n'annonce jamais à
+ * un moteur une URL qui n'existe pas encore : tant qu'une langue n'est
+ * pas dans `PUBLISHED_LOCALES`, elle est absente des `hreflang`.
+ */
+const pageKey = pageKeyOf(canonicalPath);
+const alternatePaths = PUBLISHED_LOCALES.map((code) => {
+  const exists = pageKey ? localesWithPage(pageKey).includes(code) : false;
+  const href = alternates?.[code] ?? (exists ? localizedPath(pageKey!, code) : undefined);
+  return href ? { code, href: new URL(href, SITE.url).href } : undefined;
+}).filter((entry) => entry !== undefined);
+
+/** `hreflang` n'a de sens qu'à partir de deux versions appariées. */
+const showAlternates = alternatePaths.length > 1;
+const defaultAlternate = alternatePaths.find((entry) => entry.code === DEFAULT_LOCALE);
 
 /**
  * Entités de marque présentes sur toutes les pages. Le prototype
@@ -48,9 +86,9 @@ const organizationLd = {
   name: SITE.name,
   url: SITE.url,
   logo: new URL('/signally-logo.png', SITE.url).href,
-  description: SITE.description,
+  description: common.site.description,
   email: CONTACT_EMAIL,
-  areaServed: 'FR',
+  areaServed: seo.areaServed,
   // TODO — à compléter par Signally : adresse postale, téléphone, SIREN,
   // contact DPO. Le prototype laisse ce bloc explicitement vide
   // (« Bloc à compléter »), rien n'est inventé ici.
@@ -71,9 +109,7 @@ const softwareLd = {
     lowPrice: '0.50',
     highPrice: '1.50',
     offerCount: 5,
-    description:
-      "Tarif dégressif par utilisateur et par mois : 1,50 € jusqu'à 10 utilisateurs, "
-      + "1,25 € jusqu'à 50, 1,00 € jusqu'à 100, 0,75 € jusqu'à 500, 0,50 € au-delà.",
+    description: seo.offerDescription,
   },
 };
 
@@ -81,7 +117,7 @@ const allLd = [organizationLd, softwareLd, ...jsonLd];
 ---
 
 <!doctype html>
-<html lang={SITE.lang}>
+<html lang={meta.htmlLang}>
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -90,9 +126,21 @@ const allLd = [organizationLd, softwareLd, ...jsonLd];
     <link rel="canonical" href={canonical} />
     {noindex && <meta name="robots" content="noindex,nofollow" />}
 
+    {showAlternates && alternatePaths.map((entry) => (
+      <link rel="alternate" hreflang={LOCALE_META[entry.code].htmlLang} href={entry.href} />
+    ))}
+    {showAlternates && defaultAlternate && (
+      <link rel="alternate" hreflang="x-default" href={defaultAlternate.href} />
+    )}
+
     <meta property="og:type" content={ogType} />
     <meta property="og:site_name" content={SITE.name} />
-    <meta property="og:locale" content={SITE.locale} />
+    <meta property="og:locale" content={meta.ogLocale} />
+    {showAlternates && alternatePaths
+      .filter((entry) => entry.code !== locale)
+      .map((entry) => (
+        <meta property="og:locale:alternate" content={LOCALE_META[entry.code].ogLocale} />
+      ))}
     <meta property="og:title" content={fullTitle} />
     <meta property="og:description" content={description} />
     <meta property="og:url" content={canonical} />
@@ -114,11 +162,11 @@ const allLd = [organizationLd, softwareLd, ...jsonLd];
   </head>
 
   <body>
-    <a class="skip-link" href="#contenu">Aller au contenu principal</a>
-    <Header />
+    <a class="skip-link" href="#contenu">{common.layout.skipToContent}</a>
+    <Header locale={locale} />
     <main id="contenu">
       <slot />
     </main>
-    <Footer />
+    <Footer locale={locale} />
   </body>
 </html>

@@ -1,0 +1,204 @@
+---
+import Base from '../layouts/Base.astro';
+import PageHero from '../components/PageHero.astro';
+import FaqSection from '../components/FaqSection.astro';
+import CtaBand from '../components/CtaBand.astro';
+import Satellites from '../components/Satellites.astro';
+import { faqPageLd } from '../data/faq';
+import { getDictionary } from '../i18n';
+import type { Locale } from '../i18n/config';
+import { localizedPath } from '../i18n/routes';
+
+interface Props {
+  locale: Locale;
+}
+
+const { locale } = Astro.props;
+const t = getDictionary(locale).campaigns;
+
+/**
+ * Habillage des aperçus de bannière : indépendant de la langue, il
+ * reste dans la vue. Les textes viennent du dictionnaire, dans le même
+ * ordre.
+ */
+const PREVIEW_STYLES = [
+  { bg: '#F2C531', ink: '#1A1A1A', subInk: '#4A4A46', ctaBg: '#1A1A1A', ctaInk: '#fff', border: 'none' },
+  { bg: '#1A1A1A', ink: '#fff', subInk: '#A9A7A0', ctaBg: '#F2C531', ctaInk: '#1A1A1A', border: 'none' },
+  { bg: '#FDF3D4', ink: '#1A1A1A', subInk: '#5C5C58', ctaBg: '#1A1A1A', ctaInk: '#fff', border: '1px solid #F2C531' },
+];
+
+const previews = t.preview.items.map((item, index) => ({ ...item, ...PREVIEW_STYLES[index] }));
+---
+
+<Base
+  title={t.meta.title}
+  description={t.meta.description}
+  path={localizedPath('campaigns', locale)}
+  locale={locale}
+  jsonLd={[faqPageLd(t.faq.items)]}
+>
+  <PageHero eyebrow={t.hero.eyebrow} title={t.hero.title} lede={t.hero.lede} />
+
+  <section class="section section--white">
+    <div class="container">
+      <h2 class="sec__title">{t.uses.title}</h2>
+      <p class="sec__lede">{t.uses.lede}</p>
+      <div class="grid grid--3">
+        {t.uses.items.map((u) => (
+          <div class="card">
+            <div class="card__tag">{u.tag}</div>
+            <h3>{u.title}</h3>
+            <p>{u.text}</p>
+          </div>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <section class="section section--soft">
+    <div class="container split">
+      <div>
+        <h2 class="split__title">{t.pillars.title}</h2>
+        <div class="pillars">
+          {t.pillars.items.map((p) => (
+            <div>
+              <div class="pillars__title">{p.title}</div>
+              <p class="pillars__text">{p.text}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div class="preview">
+        <div class="preview__tag">{t.preview.tag}</div>
+        <div class="preview__list">
+          {previews.map((p) => (
+            <div
+              class="preview__banner"
+              style={`background:${p.bg};color:${p.ink};border:${p.border}`}
+            >
+              <div>
+                <div class="preview__title">{p.title}</div>
+                <div class="preview__sub" style={`color:${p.subInk}`}>{p.sub}</div>
+              </div>
+              <span class="preview__cta" style={`background:${p.ctaBg};color:${p.ctaInk}`}>{p.cta}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <FaqSection title={t.faq.title} items={t.faq.items} />
+
+  <Satellites pillar="campaigns" locale={locale} />
+
+  <CtaBand
+    locale={locale}
+    title={t.cta.title}
+    text={t.cta.text}
+    secondaryLabel={t.cta.secondaryLabel}
+  />
+</Base>
+
+<style>
+  .sec__title {
+    font-size: 36px;
+    line-height: 1.14;
+    letter-spacing: -0.02em;
+    font-weight: 800;
+    margin: 0 0 16px;
+    max-width: 760px;
+  }
+
+  .sec__lede {
+    font-size: 17px;
+    color: var(--sec);
+    margin: 0 0 44px;
+    max-width: 700px;
+  }
+
+  .card__tag {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    color: var(--muted);
+    margin-bottom: 12px;
+  }
+
+  .split {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 56px;
+    align-items: center;
+  }
+
+  .split__title {
+    font-size: 34px;
+    line-height: 1.14;
+    letter-spacing: -0.02em;
+    font-weight: 800;
+    margin: 0 0 16px;
+  }
+
+  .pillars {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+    margin-top: 24px;
+  }
+
+  .pillars__title { font-weight: 800; font-size: 16.5px; margin-bottom: 4px; }
+  .pillars__text { font-size: 15px; line-height: 1.6; color: var(--sec); margin: 0; }
+
+  .preview {
+    background: var(--white);
+    border: 1px solid var(--line);
+    border-radius: var(--r-2xl);
+    padding: 28px;
+  }
+
+  .preview__tag {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    color: var(--muted);
+    margin-bottom: 16px;
+  }
+
+  .preview__list { display: flex; flex-direction: column; gap: 14px; }
+
+  .preview__banner {
+    border-radius: 12px;
+    min-height: 88px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 16px 22px;
+  }
+
+  .preview__title { font-weight: 800; font-size: 16px; }
+  .preview__sub { font-size: 12.5px; }
+
+  .preview__cta {
+    font-size: 12px;
+    font-weight: 700;
+    padding: 8px 12px;
+    border-radius: var(--r-sm);
+    white-space: nowrap;
+  }
+
+  @media (max-width: 1024px) {
+    .sec__title { font-size: 29px; }
+    .split { grid-template-columns: 1fr; gap: 36px; }
+    .split__title { font-size: 28px; }
+  }
+
+  @media (max-width: 560px) {
+    .sec__title { font-size: 25px; }
+    .split__title { font-size: 24px; }
+    .preview { padding: 20px; }
+    .preview__banner { padding: 14px 16px; flex-direction: column; align-items: flex-start; }
+  }
+</style>

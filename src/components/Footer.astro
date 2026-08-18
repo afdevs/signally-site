@@ -1,6 +1,16 @@
 ---
 import Logo from './Logo.astro';
-import { FOOTER_COLUMNS, APP_SIGNUP_URL, SITE } from '../data/nav';
+import { footerColumns, APP_SIGNUP_URL, SITE } from '../data/nav';
+import { getDictionary } from '../i18n';
+import type { Locale } from '../i18n/config';
+
+interface Props {
+  locale: Locale;
+}
+
+const { locale } = Astro.props;
+const { common } = getDictionary(locale);
+const columns = footerColumns(locale);
 
 const year = new Date().getFullYear();
 ---
@@ -9,11 +19,13 @@ const year = new Date().getFullYear();
   <div class="ftr__grid">
     <div class="ftr__brand">
       <div class="ftr__logo"><Logo height={24} /></div>
-      <p class="ftr__desc">{SITE.description}</p>
-      <a href={APP_SIGNUP_URL} class="ftr__cta" target="_blank" rel="noopener">Créer ma signature</a>
+      <p class="ftr__desc">{common.site.description}</p>
+      <a href={APP_SIGNUP_URL} class="ftr__cta" target="_blank" rel="noopener">
+        {common.actions.signup}
+      </a>
     </div>
 
-    {FOOTER_COLUMNS.map((col) => (
+    {columns.map((col) => (
       <nav class="ftr__col" aria-label={col.title}>
         <h2 class="ftr__col-title">{col.title}</h2>
         <div class="ftr__links">
@@ -31,8 +43,8 @@ const year = new Date().getFullYear();
   </div>
 
   <div class="ftr__bottom">
-    <span>© {year} {SITE.name} — {SITE.tagline}</span>
-    <span class="ftr__badges">HÉBERGEMENT EN FRANCE · RGPD · AUCUN E-MAIL LU</span>
+    <span>© {year} {SITE.name} — {common.site.tagline}</span>
+    <span class="ftr__badges">{common.footer.badges}</span>
   </div>
 </footer>
 

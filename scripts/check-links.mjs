@@ -51,8 +51,11 @@ function routeOf(file) {
 }
 
 const routes = new Set(files.map(routeOf));
-// Rendue à la demande : absente de dist mais bien servie par le serveur.
-routes.add('/contact');
+// Rendues à la demande : absentes de dist mais bien servies par le
+// serveur. Une par langue, avec le slug traduit de src/i18n/routes.ts.
+for (const contact of ['/contact', '/en/contact', '/es/contacto']) {
+  routes.add(contact);
+}
 
 // ---------------------------------------------------------------------------
 // Extraction des liens
@@ -91,61 +94,116 @@ for (const [route, { hrefs }] of pages) {
 // Les règles ci-dessous s'appuient sur le HTML construit plutôt que sur
 // src/data/clusters.ts : on vérifie ainsi ce qui est réellement servi,
 // pas ce que la source prétend.
-const articleRoutes = [...pages.keys()].filter(
-  (r) => r.startsWith('/blog/') && r !== '/blog'
-);
+//
+// Le site étant trilingue, elles sont appliquées langue par langue : un
+// article anglais doit pointer vers le pilier anglais et vers d'autres
+// articles anglais. Un lien latéral qui traverserait la frontière
+// linguistique serait un défaut, pas un maillage.
 
-// Chemins des pages piliers, déduits des pages réellement construites.
-const PILLARS = [
-  '/integrations/microsoft-365-outlook',
-  '/integrations/google-workspace-gmail',
-  '/fonctionnalites',
-  '/cas-usage',
-  '/campagnes',
-  '/securite-rgpd',
-  '/comparatifs',
-];
+/** Chemins des pages, par langue. Doit suivre `src/i18n/routes.ts`. */
+const LOCALE_ROUTES = {
+  fr: {
+    prefix: '',
+    blog: '/blog',
+    pricing: '/tarifs',
+    security: '/securite-rgpd',
+    compare: '/comparatifs',
+    pillars: [
+      '/integrations/microsoft-365-outlook',
+      '/integrations/google-workspace-gmail',
+      '/fonctionnalites',
+      '/cas-usage',
+      '/campagnes',
+      '/securite-rgpd',
+      '/comparatifs',
+    ],
+  },
+  en: {
+    prefix: '/en',
+    blog: '/en/blog',
+    pricing: '/en/pricing',
+    security: '/en/security-gdpr',
+    compare: '/en/comparisons',
+    pillars: [
+      '/en/integrations/microsoft-365-outlook',
+      '/en/integrations/google-workspace-gmail',
+      '/en/features',
+      '/en/use-cases',
+      '/en/campaigns',
+      '/en/security-gdpr',
+      '/en/comparisons',
+    ],
+  },
+  es: {
+    prefix: '/es',
+    blog: '/es/blog',
+    pricing: '/es/precios',
+    security: '/es/seguridad-rgpd',
+    compare: '/es/comparativas',
+    pillars: [
+      '/es/integraciones/microsoft-365-outlook',
+      '/es/integraciones/google-workspace-gmail',
+      '/es/funcionalidades',
+      '/es/casos-de-uso',
+      '/es/campanas',
+      '/es/seguridad-rgpd',
+      '/es/comparativas',
+    ],
+  },
+};
 
-const CONVERSION = ['/tarifs', APP_HOST];
-
-for (const route of articleRoutes) {
-  const { html, hrefs } = pages.get(route);
-
-  // Le gabarit d'article isole le corps rédactionnel ; on restreint
-  // l'analyse au contenu, pour ne pas compter l'en-tête et le pied de page.
-  const bodyStart = html.indexOf('class="prose"');
-  const bodyEnd = html.indexOf('class="side"');
-  const body = bodyStart > -1 && bodyEnd > bodyStart ? html.slice(bodyStart, bodyEnd) : html;
-  const bodyHrefs = [...body.matchAll(/href="([^"]+)"/g)].map((m) => m[1]);
-
-  // 1. Lien vers une page pilier (corps ou encart de maillage latéral).
-  const hasPillar = hrefs.some((h) => PILLARS.includes(h.replace(/\/$/, '')));
-  if (!hasPillar) warn(route, 'aucun lien vers une page pilier');
-
-  // 2. Au moins deux liens latéraux vers d'autres articles.
-  const lateral = new Set(
-    bodyHrefs
-      .filter((h) => h.startsWith('/blog/') && h.replace(/\/$/, '') !== route)
-      .map((h) => h.replace(/\/$/, ''))
+for (const [locale, conf] of Object.entries(LOCALE_ROUTES)) {
+  const articleRoutes = [...pages.keys()].filter(
+    (r) => r.startsWith(`${conf.blog}/`) && r !== conf.blog
   );
-  if (lateral.size < 2) {
-    warn(route, `${lateral.size} lien(s) latéral(aux) dans le corps, 2 attendus au minimum`);
+
+  const conversion = [conf.pricing, APP_HOST];
+
+  for (const route of articleRoutes) {
+    const { html, hrefs } = pages.get(route);
+
+    // Le gabarit d'article isole le corps rédactionnel ; on restreint
+    // l'analyse au contenu, pour ne pas compter l'en-tête et le pied de page.
+    const bodyStart = html.indexOf('class="prose"');
+    const bodyEnd = html.indexOf('class="side"');
+    const body = bodyStart > -1 && bodyEnd > bodyStart ? html.slice(bodyStart, bodyEnd) : html;
+    const bodyHrefs = [...body.matchAll(/href="([^"]+)"/g)].map((m) => m[1]);
+
+    // 1. Lien vers une page pilier de la même langue.
+    const hasPillar = hrefs.some((h) => conf.pillars.includes(h.replace(/\/$/, '')));
+    if (!hasPillar) warn(route, `aucun lien vers une page pilier (${locale})`);
+
+    // 2. Au moins deux liens latéraux vers d'autres articles de la même langue.
+    const lateral = new Set(
+      bodyHrefs
+        .filter((h) => h.startsWith(`${conf.blog}/`) && h.replace(/\/$/, '') !== route)
+        .map((h) => h.replace(/\/$/, ''))
+    );
+    if (lateral.size < 2) {
+      warn(route, `${lateral.size} lien(s) latéral(aux) dans le corps, 2 attendus au minimum`);
+    }
+
+    // 3. Au moins un lien de conversion.
+    const hasConversion = hrefs.some((h) => conversion.some((c) => h.includes(c)));
+    if (!hasConversion) warn(route, `aucun lien de conversion (${locale})`);
+
+    // 4. Aucune fuite vers une autre langue depuis le corps rédactionnel.
+    const others = Object.entries(LOCALE_ROUTES).filter(([code]) => code !== locale);
+    for (const [code, other] of others) {
+      const leaked = bodyHrefs.filter((h) => h.startsWith(`${other.blog}/`));
+      if (leaked.length > 0) {
+        warn(route, `${leaked.length} lien(s) vers le blog ${code} depuis un article ${locale}`);
+      }
+    }
   }
 
-  // 3. Au moins un lien de conversion.
-  const hasConversion = hrefs.some((h) => CONVERSION.some((c) => h.includes(c)));
-  if (!hasConversion) warn(route, 'aucun lien de conversion (tarifs ou app)');
-}
-
-// ---------------------------------------------------------------------------
-// 4. Les pages comparatives renvoient vers Tarifs et Sécurité
-// ---------------------------------------------------------------------------
-
-const comparatifs = pages.get('/comparatifs');
-if (comparatifs) {
-  for (const target of ['/tarifs', '/securite-rgpd']) {
-    if (!comparatifs.hrefs.some((h) => h.replace(/\/$/, '') === target)) {
-      warn('/comparatifs', `ne renvoie pas vers ${target}`);
+  // 5. La page comparative renvoie vers Tarifs et Sécurité, dans sa langue.
+  const comparePage = pages.get(conf.compare);
+  if (comparePage) {
+    for (const target of [conf.pricing, conf.security]) {
+      if (!comparePage.hrefs.some((h) => h.replace(/\/$/, '') === target)) {
+        warn(conf.compare, `ne renvoie pas vers ${target}`);
+      }
     }
   }
 }
@@ -175,7 +233,10 @@ if (existsSync(sitemapPath)) {
 // Rapport
 // ---------------------------------------------------------------------------
 
-console.log(`Pages analysées : ${pages.size} (dont ${articleRoutes.length} articles)`);
+const allArticleRoutes = [...pages.keys()].filter((r) =>
+  Object.values(LOCALE_ROUTES).some((c) => r.startsWith(`${c.blog}/`) && r !== c.blog)
+);
+console.log(`Pages analysées : ${pages.size} (dont ${allArticleRoutes.length} articles)`);
 
 if (problems.length === 0) {
   console.log('✓ Maillage interne et liens conformes.');

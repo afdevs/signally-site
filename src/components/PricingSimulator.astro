@@ -1,5 +1,7 @@
 ---
 import { simulate, eur, DEFAULTS } from '../lib/pricing';
+import { getDictionary } from '../i18n';
+import { LOCALE_META, localeFromPath, type Locale } from '../i18n/config';
 
 /**
  * Version compacte (un seul curseur) du simulateur, utilisée dans le
@@ -8,13 +10,23 @@ import { simulate, eur, DEFAULTS } from '../lib/pricing';
  * script client.
  */
 
+interface Props {
+  /** Déduite de l'URL par défaut : les pages n'ont pas à la passer. */
+  locale?: Locale;
+}
+
+const { locale = localeFromPath(Astro.url.pathname) } = Astro.props;
+const t = getDictionary(locale).pricing;
+const intlLocale = LOCALE_META[locale].intlLocale;
+const money = (value: number, digits = 2) => eur(value, digits, intlLocale);
+
 // Rendu serveur : les montants sont corrects sans JavaScript.
 const s = simulate({ users: DEFAULTS.users });
 ---
 
-<div class="sim" data-sim>
+<div class="sim" data-sim data-sim-locale={intlLocale}>
   <div class="sim__row">
-    <label class="sim__label" for="sim-users-compact">Vos collaborateurs</label>
+    <label class="sim__label" for="sim-users-compact">{t.compact.label}</label>
     <span class="sim__value" data-sim-label="users">{s.users}</span>
   </div>
 
@@ -35,12 +47,12 @@ const s = simulate({ users: DEFAULTS.users });
 
   <div class="sim__result" id="sim-compact-result">
     <div>
-      <div class="sim__amount" data-sim-out="monthly">{eur(s.monthly)}</div>
-      <div class="sim__caption">HT par mois</div>
+      <div class="sim__amount" data-sim-out="monthly">{money(s.monthly)}</div>
+      <div class="sim__caption">{t.compact.perMonth}</div>
     </div>
     <div>
-      <div class="sim__rate" data-sim-out="rate">{eur(s.rate)}</div>
-      <div class="sim__caption">par utilisateur</div>
+      <div class="sim__rate" data-sim-out="rate">{money(s.rate)}</div>
+      <div class="sim__caption">{t.compact.perUser}</div>
     </div>
   </div>
 </div>

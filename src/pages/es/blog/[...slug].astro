@@ -1,0 +1,15 @@
+---
+/** Blog article — es. URL comes from the frontmatter `slug`, not the filename. */
+import type { GetStaticPaths } from 'astro';
+import ArticleView from '../../../views/ArticleView.astro';
+import { articlesIn } from '../../../lib/blog';
+
+export const getStaticPaths = (async () => {
+  const articles = await articlesIn('es');
+  return articles.map((article) => ({ params: { slug: article.slug }, props: { article } }));
+}) satisfies GetStaticPaths;
+
+const { article } = Astro.props;
+---
+
+<ArticleView locale="es" article={article} />

@@ -1,0 +1,148 @@
+---
+import Base from '../layouts/Base.astro';
+import PageHero from '../components/PageHero.astro';
+import JourneySteps from '../components/JourneySteps.astro';
+import FaqSection from '../components/FaqSection.astro';
+import CtaBand from '../components/CtaBand.astro';
+import Satellites from '../components/Satellites.astro';
+import { faqPageLd } from '../data/faq';
+import { getDictionary } from '../i18n';
+import type { Locale } from '../i18n/config';
+import { localizedPath } from '../i18n/routes';
+
+interface Props {
+  locale: Locale;
+}
+
+const { locale } = Astro.props;
+const t = getDictionary(locale).integrations.microsoft;
+
+// Données structurées HowTo — demandées par le plan SEO du prototype
+// pour les pages d'intégration.
+const howToLd = {
+  '@context': 'https://schema.org',
+  '@type': 'HowTo',
+  name: t.howToName,
+  totalTime: 'PT15M',
+  step: t.adminSteps.map((s, i) => ({
+    '@type': 'HowToStep',
+    position: i + 1,
+    name: s.title,
+    text: s.text,
+  })),
+};
+---
+
+<Base
+  title={t.meta.title}
+  description={t.meta.description}
+  path={localizedPath('microsoft', locale)}
+  locale={locale}
+  jsonLd={[faqPageLd(t.faq.items), howToLd]}
+>
+  <PageHero eyebrow={t.hero.eyebrow} title={t.hero.title} lede={t.hero.lede} />
+
+  <section class="section section--white">
+    <div class="container">
+      <h2 class="sec__title">{t.journeysTitle}</h2>
+
+      <div class="journeys">
+        <JourneySteps tag={t.adminTag} steps={t.adminSteps} />
+        <JourneySteps tag={t.userTag} steps={t.userSteps} tone="dark" />
+      </div>
+
+      <div class="callout">
+        <h3 class="callout__title">{t.callout.title}</h3>
+        <p class="callout__text">{t.callout.text}</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="section section--soft">
+    <div class="container">
+      <h2 class="sec__title sec__title--tight">{t.environmentsTitle}</h2>
+      <div class="envs">
+        {t.environments.map((env) => (
+          <div class="env">
+            <div class="env__name">{env.name}</div>
+            <div class="env__detail">{env.detail}</div>
+          </div>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <FaqSection title={t.faq.title} items={t.faq.items} />
+
+  <Satellites pillar="microsoft" locale={locale} />
+
+  <CtaBand
+    locale={locale}
+    title={t.cta.title}
+    text={t.cta.text}
+    secondaryLabel={t.cta.secondaryLabel}
+  />
+</Base>
+
+<style>
+  .sec__title {
+    font-size: 36px;
+    line-height: 1.14;
+    letter-spacing: -0.02em;
+    font-weight: 800;
+    margin: 0 0 44px;
+    max-width: 760px;
+  }
+  .sec__title--tight { font-size: 34px; margin-bottom: 32px; }
+
+  .journeys {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 28px;
+  }
+
+  .callout {
+    margin-top: 32px;
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    padding: 28px;
+    background: var(--brand-surface);
+  }
+
+  .callout__title { font-size: 19px; font-weight: 800; margin: 0 0 10px; }
+  .callout__text {
+    font-size: 15.5px;
+    line-height: 1.65;
+    color: var(--ink-4);
+    margin: 0;
+    max-width: 900px;
+  }
+
+  .envs {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 16px;
+  }
+
+  .env {
+    background: var(--white);
+    border: 1px solid var(--line);
+    border-radius: var(--r-lg);
+    padding: 22px;
+  }
+
+  .env__name { font-weight: 800; font-size: 15.5px; margin-bottom: 6px; }
+  .env__detail { font-size: 13.5px; color: var(--sec); }
+
+  @media (max-width: 1024px) {
+    .sec__title, .sec__title--tight { font-size: 29px; margin-bottom: 32px; }
+    .journeys { grid-template-columns: 1fr; gap: 20px; }
+    .envs { grid-template-columns: repeat(2, 1fr); }
+  }
+
+  @media (max-width: 560px) {
+    .sec__title, .sec__title--tight { font-size: 25px; }
+    .envs { grid-template-columns: 1fr; }
+    .callout { padding: 22px; }
+  }
+</style>

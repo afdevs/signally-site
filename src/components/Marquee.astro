@@ -1,4 +1,15 @@
 ---
+import { getDictionary } from '../i18n';
+import { localeFromPath, type Locale } from '../i18n/config';
+
+interface Props {
+  /** Déduite de l'URL par défaut : les pages n'ont pas à la passer. */
+  locale?: Locale;
+}
+
+const { locale = localeFromPath(Astro.url.pathname) } = Astro.props;
+const { common } = getDictionary(locale);
+
 const LOGOS = [
   'CELANEO',
   'TERRES DE CAFÉ',
@@ -12,7 +23,7 @@ const LOGOS = [
 {/* Le contenu est dupliqué : l'animation translate de -50 %, la seconde
     copie prend exactement la place de la première, d'où la boucle sans
     couture. La copie est aria-hidden pour ne pas être lue deux fois. */}
-<section class="marquee" aria-label="Ils utilisent Signally">
+<section class="marquee" aria-label={common.sections.marqueeAria}>
   <div class="marquee__track">
     <ul class="marquee__row">
       {LOGOS.map((name) => <li>{name}</li>)}

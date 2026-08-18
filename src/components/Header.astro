@@ -1,21 +1,47 @@
 ---
 import Logo from './Logo.astro';
-import { NAV_GROUPS, NAV_PRICING, APP_LOGIN_URL, APP_SIGNUP_URL } from '../data/nav';
+import { navGroups, navPricing, APP_LOGIN_URL, APP_SIGNUP_URL } from '../data/nav';
+import { getDictionary } from '../i18n';
+import { LOCALE_META, PUBLISHED_LOCALES, type Locale } from '../i18n/config';
+import { normalizePath, translatePath } from '../i18n/routes';
 
-const current = Astro.url.pathname.replace(/\/$/, '') || '/';
+interface Props {
+  locale: Locale;
+}
+
+const { locale } = Astro.props;
+const { common } = getDictionary(locale);
+
+const groups = navGroups(locale);
+const pricing = navPricing(locale);
+
+const current = normalizePath(Astro.url.pathname);
 const isActive = (href: string) =>
   href === '/' ? current === '/' : current === href || current.startsWith(href + '/');
 const groupActive = (items: { href: string }[]) => items.some((i) => isActive(i.href));
+
+/**
+ * Chaque langue pointe vers la page équivalente, pas vers l'accueil :
+ * changer de langue depuis /tarifs doit mener à /en/pricing. Tant qu'une
+ * seule langue est publiée, le sélecteur reste un libellé inerte.
+ */
+const languages = PUBLISHED_LOCALES.map((code) => ({
+  code,
+  name: LOCALE_META[code].name,
+  htmlLang: LOCALE_META[code].htmlLang,
+  href: translatePath(current, code),
+}));
+const showSwitcher = languages.length > 1;
 ---
 
 <header class="hdr">
   <div class="hdr__inner">
-    <a href="/" class="hdr__logo" aria-label="Signally — accueil">
+    <a href={translatePath('/', locale)} class="hdr__logo" aria-label={common.layout.homeAria}>
       <Logo height={26} />
     </a>
 
-    <nav class="hdr__nav" aria-label="Navigation principale">
-      {NAV_GROUPS.map((group) => (
+    <nav class="hdr__nav" aria-label={common.layout.mainNavAria}>
+      {groups.map((group) => (
         <div class="menu" data-menu>
           <button
             type="button"
@@ -44,23 +70,68 @@ const groupActive = (items: { href: string }[]) => items.some((i) => isActive(i.
       ))}
 
       <a
-        href={NAV_PRICING.href}
+        href={pricing.href}
         class="hdr__link"
-        data-active={isActive(NAV_PRICING.href) ? 'true' : undefined}
-        aria-current={isActive(NAV_PRICING.href) ? 'page' : undefined}
+        data-active={isActive(pricing.href) ? 'true' : undefined}
+        aria-current={isActive(pricing.href) ? 'page' : undefined}
       >
-        {NAV_PRICING.label}
+        {pricing.label}
       </a>
     </nav>
 
     <div class="hdr__actions">
-      <span class="hdr__lang" title="Versions anglaise et espagnole au prochain lot">FR</span>
-      <a href={APP_LOGIN_URL} class="hdr__login" target="_blank" rel="noopener">Connexion</a>
-      <a href={APP_SIGNUP_URL} class="hdr__cta" target="_blank" rel="noopener">Créer ma signature</a>
+      {showSwitcher ? (
+        <div class="menu menu--lang" data-menu>
+          <button
+            type="button"
+            class="menu__trigger hdr__lang"
+            aria-expanded="false"
+            aria-controls="menu-lang"
+            aria-label={common.layout.languageAria}
+            data-menu-trigger
+          >
+            {LOCALE_META[locale].label}
+            <svg class="menu__chev" width="10" height="6" viewBox="0 0 10 6" aria-hidden="true">
+              <path d="M1 1l4 4 4-4" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
+            </svg>
+          </button>
+          <div class="menu__wrap" id="menu-lang" data-menu-panel hidden>
+            <div class="menu__panel menu__panel--lang">
+              {languages.map((language) => (
+                <a
+                  href={language.href}
+                  class="menu__item"
+                  hreflang={language.htmlLang}
+                  lang={language.htmlLang}
+                  aria-current={language.code === locale ? 'true' : undefined}
+                >
+                  <span class="menu__item-title">{language.name}</span>
+                </a>
+              ))}
+            </div>
+          </div>
+        </div>
+      ) : (
+        <span class="hdr__lang hdr__lang--static">{LOCALE_META[locale].label}</span>
+      )}
+      <a href={APP_LOGIN_URL} class="hdr__login" target="_blank" rel="noopener">
+        {common.actions.login}
+      </a>
+      <a href={APP_SIGNUP_URL} class="hdr__cta" target="_blank" rel="noopener">
+        {common.actions.signup}
+      </a>
     </div>
 
-    <button type="button" class="hdr__burger" aria-expanded="false" aria-controls="mobile-nav" data-burger>
-      <span class="visually-hidden">Ouvrir le menu</span>
+    <button
+      type="button"
+      class="hdr__burger"
+      aria-expanded="false"
+      aria-controls="mobile-nav"
+      data-burger
+      data-label-open={common.layout.openMenu}
+      data-label-close={common.layout.closeMenu}
+    >
+      <span class="visually-hidden">{common.layout.openMenu}</span>
       <span class="hdr__burger-bar" aria-hidden="true"></span>
       <span class="hdr__burger-bar" aria-hidden="true"></span>
       <span class="hdr__burger-bar" aria-hidden="true"></span>
@@ -69,8 +140,8 @@ const groupActive = (items: { href: string }[]) => items.some((i) => isActive(i.
 
   <!-- Tiroir mobile : n'existe pas dans le prototype (desktop uniquement). -->
   <div class="drawer" id="mobile-nav" data-drawer hidden>
-    <nav class="drawer__inner" aria-label="Navigation mobile">
-      {NAV_GROUPS.map((group) => (
+    <nav class="drawer__inner" aria-label={common.layout.mobileNavAria}>
+      {groups.map((group) => (
         <section class="drawer__group">
           <h2 class="drawer__title">{group.label}</h2>
           {group.items.map((item) => (
@@ -81,10 +152,30 @@ const groupActive = (items: { href: string }[]) => items.some((i) => isActive(i.
         </section>
       ))}
       <section class="drawer__group">
-        <a href={NAV_PRICING.href} class="drawer__link drawer__link--lead">{NAV_PRICING.label}</a>
-        <a href={APP_LOGIN_URL} class="drawer__link" target="_blank" rel="noopener">Connexion</a>
+        <a href={pricing.href} class="drawer__link drawer__link--lead">{pricing.label}</a>
+        <a href={APP_LOGIN_URL} class="drawer__link" target="_blank" rel="noopener">
+          {common.actions.login}
+        </a>
       </section>
-      <a href={APP_SIGNUP_URL} class="btn btn--brand" target="_blank" rel="noopener">Créer ma signature</a>
+      {showSwitcher && (
+        <section class="drawer__group">
+          <h2 class="drawer__title">{common.layout.languageAria}</h2>
+          {languages.map((language) => (
+            <a
+              href={language.href}
+              class="drawer__link"
+              hreflang={language.htmlLang}
+              lang={language.htmlLang}
+              aria-current={language.code === locale ? 'true' : undefined}
+            >
+              {language.name}
+            </a>
+          ))}
+        </section>
+      )}
+      <a href={APP_SIGNUP_URL} class="btn btn--brand" target="_blank" rel="noopener">
+        {common.actions.signup}
+      </a>
     </nav>
   </div>
 </header>
@@ -227,8 +318,21 @@ const groupActive = (items: { href: string }[]) => items.some((i) => isActive(i.
     font-size: 11.5px;
     font-weight: 600;
     color: var(--muted);
-    cursor: default;
   }
+
+  /* Une seule langue publiée : le libellé n'est pas cliquable. */
+  .hdr__lang--static { cursor: default; }
+
+  button.hdr__lang {
+    padding: 10px 6px;
+    gap: 5px;
+  }
+  button.hdr__lang:hover,
+  button.hdr__lang[aria-expanded='true'] { color: var(--ink); }
+
+  /* Le sélecteur borde le côté droit : son panneau s'aligne à droite. */
+  .menu--lang .menu__wrap { left: auto; right: 0; }
+  .menu__panel--lang { min-width: 160px; }
 
   .hdr__login {
     font-size: 14.5px;
@@ -415,7 +519,12 @@ const groupActive = (items: { href: string }[]) => items.some((i) => isActive(i.
     const open = burger.getAttribute('aria-expanded') === 'true';
     burger.setAttribute('aria-expanded', String(!open));
     drawer.hidden = open;
-    burger.querySelector('.visually-hidden')!.textContent = open ? 'Ouvrir le menu' : 'Fermer le menu';
+    // `open` est l'état d'avant la bascule : on vient donc de fermer, et
+    // le bouton doit désormais proposer d'ouvrir. Les deux libellés sont
+    // posés en data-attributs par le gabarit, dans la langue de la page.
+    burger.querySelector('.visually-hidden')!.textContent = open
+      ? burger.dataset.labelOpen!
+      : burger.dataset.labelClose!;
   });
 
   document.addEventListener('keydown', (event) => {

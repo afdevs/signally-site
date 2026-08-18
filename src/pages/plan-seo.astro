@@ -1,8 +1,11 @@
 ---
-import { getCollection } from 'astro:content';
 import Base from '../layouts/Base.astro';
 import PageHero from '../components/PageHero.astro';
-import { PLANNED_ARTICLES, CLUSTERS, CLUSTER_DESC, PILLAR_OF } from '../data/clusters';
+import { CLUSTERS, PILLAR_PAGE } from '../data/clusters';
+import { articlesIn } from '../lib/blog';
+import { getDictionary } from '../i18n';
+import { DEFAULT_LOCALE, LOCALES } from '../i18n/config';
+import { localizedPath } from '../i18n/routes';
 
 /**
  * Feuille de route éditoriale interne.
@@ -11,19 +14,31 @@ import { PLANNED_ARTICLES, CLUSTERS, CLUSTER_DESC, PILLAR_OF } from '../data/clu
  * indexable. Choix retenu avec Signally : la page reste accessible par
  * URL pour l'équipe, mais elle porte un noindex, n'est pas liée depuis
  * la navigation et est exclue du sitemap (voir astro.config.mjs).
+ *
+ * Elle reste en français : c'est un outil de pilotage interne. Elle
+ * suit en revanche l'avancement des traductions, langue par langue.
  */
 
-const published = new Set(
-  (await getCollection('blog', ({ data }) => !data.draft)).map((p) => p.id)
-);
+const t = getDictionary(DEFAULT_LOCALE).blog;
+
+/** Le plan éditorial de référence est le français. */
+const planned = await articlesIn(DEFAULT_LOCALE);
 
 const counts = CLUSTERS.map((cluster) => ({
   cluster,
-  total: PLANNED_ARTICLES.filter((a) => a.cluster === cluster).length,
-  done: PLANNED_ARTICLES.filter((a) => a.cluster === cluster && published.has(a.slug)).length,
+  total: planned.filter((a) => a.cluster === cluster).length,
+  done: planned.filter((a) => a.cluster === cluster).length,
 }));
 
-const totalDone = PLANNED_ARTICLES.filter((a) => published.has(a.slug)).length;
+const totalDone = planned.length;
+
+/** Avancement des traductions, mesuré sur la couverture du plan français. */
+const coverage = await Promise.all(
+  LOCALES.map(async (locale) => ({
+    locale,
+    count: (await articlesIn(locale)).length,
+  })),
+);
 
 const linkingRules = [
   "Chaque article pointe vers sa page pilier avec une ancre descriptive (« add-in Microsoft 365 », jamais « cliquez ici »).",
@@ -67,29 +82,41 @@ const geoRules = [
         <div class="progress__head">
           <h2 class="progress__title">Avancement</h2>
           <div class="progress__count">
-            <span class="progress__done">{totalDone}</span> / {PLANNED_ARTICLES.length} articles rédigés
+            <span class="progress__done">{totalDone}</span> / {planned.length} articles rédigés
           </div>
         </div>
         <div class="progress__bar">
-          <div
-            class="progress__fill"
-            style={`width:${(totalDone / PLANNED_ARTICLES.length) * 100}%`}
-          ></div>
+          <div class="progress__fill" style={`width:${(totalDone / planned.length) * 100}%`}></div>
         </div>
         <div class="progress__clusters">
           {counts.map((c) => (
             <div class="cluster">
               <div class="cluster__name">{c.cluster}</div>
-              <div class="cluster__desc">{CLUSTER_DESC[c.cluster]}</div>
+              <div class="cluster__desc">{t.clusterDesc[c.cluster]}</div>
               <div class="cluster__meta">
                 <span class="cluster__count">{c.done}/{c.total}</span>
-                <a href={PILLAR_OF[c.cluster].href} class="cluster__pillar">
-                  pilier : {PILLAR_OF[c.cluster].href}
+                <a
+                  href={localizedPath(PILLAR_PAGE[c.cluster], DEFAULT_LOCALE)}
+                  class="cluster__pillar"
+                >
+                  pilier : {localizedPath(PILLAR_PAGE[c.cluster], DEFAULT_LOCALE)}
                 </a>
               </div>
             </div>
           ))}
         </div>
+      </div>
+
+      <h2 class="sec__title">Traductions</h2>
+      <div class="progress__clusters">
+        {coverage.map((c) => (
+          <div class="cluster">
+            <div class="cluster__name">{c.locale.toUpperCase()}</div>
+            <div class="cluster__meta">
+              <span class="cluster__count">{c.count}/{planned.length}</span>
+            </div>
+          </div>
+        ))}
       </div>
 
       <h2 class="sec__title">Les 40 articles</h2>
@@ -105,22 +132,14 @@ const geoRules = [
             </tr>
           </thead>
           <tbody>
-            {PLANNED_ARTICLES.map((a) => (
+            {planned.map((a, i) => (
               <tr>
-                <td class="mono">{a.n}</td>
-                <td>
-                  {published.has(a.slug) ? (
-                    <a href={`/blog/${a.slug}`}>{a.title}</a>
-                  ) : (
-                    a.title
-                  )}
-                </td>
+                <td class="mono">{String(i + 1).padStart(2, '0')}</td>
+                <td><a href={a.href}>{a.title}</a></td>
                 <td class="mono kw">{a.keyword}</td>
                 <td class="cat">{a.cluster}</td>
                 <td>
-                  <span class:list={['pill', published.has(a.slug) ? 'pill--ok' : 'pill--todo']}>
-                    {published.has(a.slug) ? 'publié' : 'à rédiger'}
-                  </span>
+                  <span class="pill pill--ok">publié</span>
                 </td>
               </tr>
             ))}

@@ -1,0 +1,90 @@
+---
+import Base from '../layouts/Base.astro';
+import PageHero from '../components/PageHero.astro';
+import FaqSection from '../components/FaqSection.astro';
+import CtaBand from '../components/CtaBand.astro';
+import Satellites from '../components/Satellites.astro';
+import { faqPageLd } from '../data/faq';
+import { APP_SIGNUP_URL } from '../data/nav';
+import { getDictionary } from '../i18n';
+import type { Locale } from '../i18n/config';
+import { localizedPath } from '../i18n/routes';
+
+interface Props {
+  locale: Locale;
+}
+
+const { locale } = Astro.props;
+const t = getDictionary(locale).features;
+
+---
+
+<Base
+  title={t.meta.title}
+  description={t.meta.description}
+  path={localizedPath('features', locale)}
+  locale={locale}
+  jsonLd={[faqPageLd(t.faq.items)]}
+>
+  <PageHero eyebrow={t.hero.eyebrow} title={t.hero.title} lede={t.hero.lede}>
+    <a href={APP_SIGNUP_URL} class="btn btn--brand" target="_blank" rel="noopener">
+      {t.hero.cta}
+    </a>
+  </PageHero>
+
+  <section class="section section--white">
+    <div class="container">
+      <h2 class="sec__title sec__title--wide">{t.grid.title}</h2>
+      <div class="grid grid--3">
+        {t.grid.items.map((f) => (
+          <div class="card" id={f.id}>
+            <h3>{f.title}</h3>
+            <p>{f.text}</p>
+          </div>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <section class="section section--soft">
+    <div class="container">
+      <h2 class="sec__title">{t.steps.title}</h2>
+      <div class="grid grid--4">
+        {t.steps.items.map((s) => (
+          <div class="card">
+            <div class="step-num">{s.n}</div>
+            <h3 class="step__title">{s.title}</h3>
+            <p>{s.text}</p>
+          </div>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <FaqSection title={t.faq.title} items={t.faq.items} />
+
+  <Satellites pillar="features" locale={locale} />
+
+  <CtaBand
+    locale={locale}
+    title={t.cta.title}
+    text={t.cta.text}
+    primaryLabel={t.cta.primaryLabel}
+  />
+</Base>
+
+<style>
+  .sec__title {
+    font-size: 36px;
+    line-height: 1.14;
+    letter-spacing: -0.02em;
+    font-weight: 800;
+    margin: 0 0 44px;
+  }
+  .sec__title--wide { max-width: 720px; }
+
+  .step__title { font-size: 17px; }
+
+  @media (max-width: 1024px) { .sec__title { font-size: 29px; margin-bottom: 32px; } }
+  @media (max-width: 560px) { .sec__title { font-size: 25px; } }
+</style>

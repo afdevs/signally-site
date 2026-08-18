@@ -41,6 +41,12 @@ const PAGES = [
   '/blog/signature-mail-outlook-entreprise',
   '/contact',
   '/comparatifs',
+  // Une page par langue au moins : les titres traduits sont plus longs
+  // et c'est en mobile que le débordement se voit.
+  '/en/',
+  '/en/pricing',
+  '/es/',
+  '/es/precios',
 ];
 
 /** Rendu par lots : au-delà de 4 colonnes la planche devient illisible. */

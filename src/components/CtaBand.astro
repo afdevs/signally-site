@@ -1,5 +1,8 @@
 ---
 import { APP_SIGNUP_URL } from '../data/nav';
+import { getDictionary } from '../i18n';
+import { localeFromPath, type Locale } from '../i18n/config';
+import { localizedPath } from '../i18n/routes';
 
 interface Props {
   title?: string;
@@ -7,14 +10,19 @@ interface Props {
   primaryLabel?: string;
   secondaryLabel?: string;
   secondaryHref?: string;
+  /** Déduite de l'URL par défaut : les pages n'ont pas à la passer. */
+  locale?: Locale;
 }
 
+const { locale = localeFromPath(Astro.url.pathname) } = Astro.props;
+const { common } = getDictionary(locale);
+
 const {
-  title = 'Commencez avec Signally',
-  text = "Créez votre signature en ligne, gratuitement et sans carte bancaire. Le déploiement à toute l'entreprise ne prend que quelques minutes de plus.",
-  primaryLabel = 'Créer ma signature',
-  secondaryLabel = 'Demander une démo',
-  secondaryHref = '/contact',
+  title = common.cta.title,
+  text = common.cta.text,
+  primaryLabel = common.actions.signup,
+  secondaryLabel = common.actions.requestDemo,
+  secondaryHref = localizedPath('contact', locale),
 } = Astro.props;
 
 // Le prototype colore « Signally » en jaune dans le titre.

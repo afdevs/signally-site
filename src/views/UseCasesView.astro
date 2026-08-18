@@ -1,0 +1,140 @@
+---
+import Base from '../layouts/Base.astro';
+import PageHero from '../components/PageHero.astro';
+import CtaBand from '../components/CtaBand.astro';
+import Satellites from '../components/Satellites.astro';
+import { getDictionary } from '../i18n';
+import type { Locale } from '../i18n/config';
+import { localizedPath } from '../i18n/routes';
+
+interface Props {
+  locale: Locale;
+}
+
+const { locale } = Astro.props;
+const t = getDictionary(locale).useCases;
+
+/**
+ * Alternance de fonds : mise en forme, donc pas dans le dictionnaire.
+ * Le deuxième bloc est sur fond doux, les deux autres sur blanc.
+ */
+const TONES = ['white', 'soft', 'white'] as const;
+const roles = t.roles.map((role, index) => ({ ...role, tone: TONES[index] }));
+
+---
+
+<Base
+  title={t.meta.title}
+  description={t.meta.description}
+  path={localizedPath('useCases', locale)}
+  locale={locale}
+>
+  <PageHero eyebrow={t.hero.eyebrow} title={t.hero.title} lede={t.hero.lede} />
+
+  <section class="roles">
+    <div class="container">
+      {roles.map((role) => (
+        <article class:list={['role', role.tone === 'soft' && 'role--soft']}>
+          <div>
+            <div class="role__tag">{role.tag}</div>
+            <h2 class="role__title">{role.title}</h2>
+            <p class="role__text">{role.text}</p>
+          </div>
+          <div class="role__cols">
+            {role.columns.map((col) => (
+              <div>
+                <div class="role__col-label">{col.label}</div>
+                <ul class="role__list">
+                  {col.items.map((item) => <li>{item}</li>)}
+                </ul>
+              </div>
+            ))}
+          </div>
+        </article>
+      ))}
+    </div>
+  </section>
+
+  <Satellites pillar="useCases" locale={locale} />
+
+  <CtaBand
+    locale={locale}
+    title={t.cta.title}
+    text={t.cta.text}
+    secondaryLabel={t.cta.secondaryLabel}
+  />
+</Base>
+
+<style>
+  .roles { padding: 80px 0; background: var(--white); }
+
+  .role {
+    border: 1px solid var(--line);
+    border-radius: var(--r-2xl);
+    padding: 36px;
+    display: grid;
+    grid-template-columns: 0.8fr 1.2fr;
+    gap: 40px;
+  }
+  .role + .role { margin-top: 26px; }
+  .role--soft { background: var(--soft); }
+
+  .role__tag {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    color: var(--muted);
+    margin-bottom: 12px;
+  }
+
+  .role__title {
+    font-size: 28px;
+    font-weight: 800;
+    margin: 0 0 10px;
+    line-height: 1.2;
+  }
+
+  .role__text {
+    font-size: 15.5px;
+    line-height: 1.6;
+    color: var(--sec);
+    margin: 0;
+  }
+
+  .role__cols {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+  }
+
+  .role__col-label {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--muted);
+    margin-bottom: 10px;
+  }
+
+  .role__list {
+    display: flex;
+    flex-direction: column;
+    gap: 9px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    font-size: 14.5px;
+    line-height: 1.5;
+    color: var(--ink-2);
+  }
+
+  @media (max-width: 1024px) {
+    .roles { padding: 56px 0; }
+    .role { grid-template-columns: 1fr; gap: 28px; padding: 28px; }
+    .role__title { font-size: 24px; }
+  }
+
+  @media (max-width: 560px) {
+    .role { padding: 24px; }
+    .role__cols { grid-template-columns: 1fr; gap: 20px; }
+    .role__title { font-size: 21px; }
+  }
+</style>

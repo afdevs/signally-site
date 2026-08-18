@@ -14,6 +14,16 @@ export default defineConfig({
   output: 'static',
   adapter: node({ mode: 'standalone' }),
   /**
+   * Français à la racine, anglais et espagnol préfixés. Doit rester
+   * aligné avec `src/i18n/config.ts`, qui porte la même liste côté
+   * application (libellés, hreflang, formats de date).
+   */
+  i18n: {
+    locales: ['fr', 'en', 'es'],
+    defaultLocale: 'fr',
+    routing: { prefixDefaultLocale: false },
+  },
+  /**
    * 4322, et non le 4321 par défaut d'Astro : ce port est déjà occupé en
    * local par l'application Signally (v2-app). La variable PORT reste
    * prioritaire, ce qui laisse l'hébergeur imposer le sien.
@@ -27,6 +37,13 @@ export default defineConfig({
     sitemap({
       // /plan-seo is an internal editorial roadmap: noindex and out of the sitemap.
       filter: (page) => !page.includes('/plan-seo'),
+      // Émet les <xhtml:link rel="alternate"> entre versions linguistiques.
+      // Seules les pages réellement construites sont appariées : tant qu'une
+      // langue n'est pas livrée, aucune alternative n'est déclarée.
+      i18n: {
+        defaultLocale: 'fr',
+        locales: { fr: 'fr-FR', en: 'en-US', es: 'es-ES' },
+      },
     }),
   ],
   markdown: {

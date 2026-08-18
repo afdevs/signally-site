@@ -7,15 +7,21 @@
  * puis réutilisé tel quel par le script des curseurs.
  */
 
-export type Tier = { upTo: number | null; rate: number; label: string };
+export type Tier = { upTo: number | null; rate: number };
 
-/** Paliers dégressifs, en euros HT par utilisateur et par mois. */
+/**
+ * Paliers dégressifs, en euros HT par utilisateur et par mois.
+ *
+ * Uniquement des nombres : les libellés de tranche (« De 11 à 50
+ * utilisateurs ») vivent dans `src/i18n/<langue>/pricing.ts`, sans quoi
+ * la grille serait à maintenir en trois exemplaires.
+ */
 export const TIERS: Tier[] = [
-  { upTo: 10, rate: 1.5, label: "Jusqu'à 10 utilisateurs" },
-  { upTo: 50, rate: 1.25, label: 'De 11 à 50 utilisateurs' },
-  { upTo: 100, rate: 1.0, label: 'De 51 à 100 utilisateurs' },
-  { upTo: 500, rate: 0.75, label: 'De 101 à 500 utilisateurs' },
-  { upTo: null, rate: 0.5, label: 'Au-delà de 500 utilisateurs' },
+  { upTo: 10, rate: 1.5 },
+  { upTo: 50, rate: 1.25 },
+  { upTo: 100, rate: 1.0 },
+  { upTo: 500, rate: 0.75 },
+  { upTo: null, rate: 0.5 },
 ];
 
 /** Tarif unitaire applicable pour un effectif donné. */
@@ -27,14 +33,21 @@ export function rate(users: number): number {
   return 0.5;
 }
 
-/** Montant formaté en français, ex. « 1 234,50 € ». */
-export function eur(value: number, digits = 2): string {
-  return (
-    value.toLocaleString('fr-FR', {
-      minimumFractionDigits: digits,
-      maximumFractionDigits: digits,
-    }) + ' €'
-  );
+/**
+ * Montant en euros, formaté selon la langue.
+ *
+ * Le style `currency` d'Intl place le symbole où la langue l'attend —
+ * « 1 234,50 € » en français et en espagnol, « €1,234.50 » en anglais —
+ * là où une concaténation « valeur + ' €' » imposerait la convention
+ * française partout. La devise, elle, reste l'euro dans les trois cas.
+ */
+export function eur(value: number, digits = 2, intlLocale = 'fr-FR'): string {
+  return new Intl.NumberFormat(intlLocale, {
+    style: 'currency',
+    currency: 'EUR',
+    minimumFractionDigits: digits,
+    maximumFractionDigits: digits,
+  }).format(value);
 }
 
 export type Simulation = {
