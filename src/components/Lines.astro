@@ -1,0 +1,31 @@
+---
+/**
+ * Rend un texte dont la maquette impose la coupure de ligne.
+ *
+ * Un dictionnaire peut livrer une chaîne (aucune coupure voulue) ou un
+ * tableau de lignes. Les coupures ne s'appliquent qu'au-dessus de
+ * 1024px (`.br-wide`, dans global.css) : sur mobile, le texte se
+ * recompose seul plutôt que de casser au mauvais endroit.
+ */
+
+interface Props {
+  text: string | readonly string[];
+}
+
+const { text } = Astro.props;
+const lines = typeof text === 'string' ? [text] : text;
+---
+
+{
+  lines.map((line, i) => (
+    <Fragment>
+      {i > 0 && (
+        <Fragment>
+          {' '}
+          <br class="br-wide" />
+        </Fragment>
+      )}
+      {line}
+    </Fragment>
+  ))
+}

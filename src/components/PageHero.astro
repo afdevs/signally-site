@@ -4,10 +4,13 @@
  * (prototype : padding 76px 24px 84px, fond #1A1A1A).
  */
 
+import Lines from './Lines.astro';
+
 interface Props {
   eyebrow: string;
-  title: string;
-  lede?: string;
+  /** Un tableau force les coupures de ligne voulues par la maquette. */
+  title: string | readonly string[];
+  lede?: string | readonly string[];
   /** Réduit le padding — utilisé par Contact et Blog dans le prototype. */
   tight?: boolean;
 }
@@ -18,8 +21,10 @@ const { eyebrow, title, lede, tight = false } = Astro.props;
 <section class:list={['phero', 'on-dark', tight && 'phero--tight']}>
   <div class="container">
     <div class="eyebrow eyebrow--brand">{eyebrow}</div>
-    <h1 class:list={['phero__title', tight && 'phero__title--tight']}>{title}</h1>
-    {lede && <p class="phero__lede">{lede}</p>}
+    <h1 class:list={['phero__title', tight && 'phero__title--tight']}>
+      <Lines text={title} />
+    </h1>
+    {lede && <p class="phero__lede"><Lines text={lede} /></p>}
     <slot />
   </div>
 </section>

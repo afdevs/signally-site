@@ -10,9 +10,9 @@ export const features = {
   hero: {
     eyebrow: 'Générateur de signature mail',
     title:
-      "Créer une signature mail professionnelle, puis la dupliquer sur toute l'entreprise.",
+      "Créez une signature d'e-mail professionnelle et déployez-la automatiquement dans toute l'entreprise.",
     lede:
-      "L'éditeur Signally couvre les deux moments : la conception d'un modèle de signature au design impeccable, et sa distribution à chaque collaborateur avec ses propres informations.",
+      "L'éditeur Signally vous permet la conception d'une signature impeccable, et son déploiement se fait automatiquement, sans aucune intervention des collaborateurs.",
     cta: "Ouvrir l'éditeur gratuitement",
   },
 
@@ -37,13 +37,13 @@ export const features = {
       {
         title: 'Champs dynamiques',
         text:
-          'Nom, fonction, service, téléphone, bureau : les champs se remplissent depuis votre annuaire Entra ID ou Google Directory.',
+          'Nom, fonction, service, téléphone, bureau : les champs se remplissent depuis votre annuaire Microsoft Entra ID ou Google Directory.',
       },
       {
         id: 'equipes',
         title: 'Équipes & groupes',
         text:
-          'Un gabarit par filiale, marque, service ou pays. Les collaborateurs héritent du bon modèle automatiquement.',
+          'Une signature par filiale, marque, service ou pays. Les collaborateurs héritent du bon modèle automatiquement.',
       },
       {
         title: 'Verrouillage administrateur',
@@ -78,7 +78,7 @@ export const features = {
     items: [
       {
         n: '01',
-        title: 'Vous créez le gabarit',
+        title: 'Vous créez votre signature',
         text: "Depuis un template ou une page blanche, aux couleurs de votre charte.",
       },
       {

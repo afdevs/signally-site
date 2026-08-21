@@ -2,6 +2,9 @@
 import Base from '../layouts/Base.astro';
 import SignatureMock from '../components/SignatureMock.astro';
 import Marquee from '../components/Marquee.astro';
+import Testimonials from '../components/Testimonials.astro';
+import Lines from '../components/Lines.astro';
+import Logo from '../components/Logo.astro';
 import AppTabs from '../components/AppTabs.astro';
 import CampaignPlanner from '../components/CampaignPlanner.astro';
 import PricingSimulator from '../components/PricingSimulator.astro';
@@ -54,8 +57,29 @@ const { common, home: t } = getDictionary(locale);
             {common.actions.demo}
           </a>
         </div>
+        {/* Badges de réassurance sécurité : bouclier + affirmation. */}
         <div class="hero__badges">
-          {t.hero.badges.map((b) => <span class="hero__chip">{b}</span>)}
+          {t.hero.badges.map((b) => (
+            <span class="hero__chip">
+              <svg class="hero__chip-icon" viewBox="0 0 16 16" aria-hidden="true" focusable="false">
+                <path
+                  d="M8 1.3 2.9 3.4v4.1c0 3.1 2.1 5.9 5.1 7.2 3-1.3 5.1-4.1 5.1-7.2V3.4L8 1.3Z"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.3"
+                />
+                <path
+                  d="m5.7 8 1.7 1.8 3-3.4"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.6"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
+              </svg>
+              {b}
+            </span>
+          ))}
         </div>
       </div>
       <SignatureMock />
@@ -64,7 +88,9 @@ const { common, home: t } = getDictionary(locale);
 
   <Marquee locale={locale} />
 
-  <AppTabs />
+  <Testimonials locale={locale} />
+
+  <AppTabs locale={locale} />
 
   {/* ============ PROBLÉMATIQUE ============ */}
   <section class="section section--white">
@@ -74,15 +100,27 @@ const { common, home: t } = getDictionary(locale);
         <h2 class="problem__title">{t.problem.title}</h2>
       </div>
 
+      {/* Les deux colonnes s'annoncent par le logo — barré à gauche,
+          en clair sur l'encre à droite — puis par leur intitulé. */}
       <div class="problem__compare">
         <div class="problem__col problem__col--without">
-          <div class="problem__tag">{t.problem.withoutTag}</div>
+          <div class="problem__banner">
+            <span class="problem__mark problem__mark--off">
+              <Logo height={17} />
+            </span>
+            <span class="problem__tag">{t.problem.withoutTag}</span>
+          </div>
           <div class="problem__list">
             {t.problem.without.map((item) => <div>{item}</div>)}
           </div>
         </div>
         <div class="problem__col problem__col--with on-dark">
-          <div class="problem__tag problem__tag--brand">{t.problem.withTag}</div>
+          <div class="problem__banner">
+            <span class="problem__mark problem__mark--on">
+              <Logo height={17} />
+            </span>
+            <span class="problem__tag problem__tag--brand">{t.problem.withTag}</span>
+          </div>
           <div class="problem__list problem__list--light">
             {t.problem.with.map((item) => <div>{item}</div>)}
           </div>
@@ -152,7 +190,7 @@ const { common, home: t } = getDictionary(locale);
     <div class="container split">
       <div>
         <div class="eyebrow">{t.campaigns.eyebrow}</div>
-        <h2 class="h-section">{t.campaigns.title}</h2>
+        <h2 class="h-section"><Lines text={t.campaigns.title} /></h2>
         <p class="split__lede">{t.campaigns.lede}</p>
         <ul class="bullets">
           {t.campaigns.points.map((point) => (
@@ -163,7 +201,7 @@ const { common, home: t } = getDictionary(locale);
           {t.campaigns.cta}
         </a>
       </div>
-      <CampaignPlanner />
+      <CampaignPlanner locale={locale} />
     </div>
   </section>
 
@@ -203,7 +241,7 @@ const { common, home: t } = getDictionary(locale);
   <section class="section section--dark on-dark">
     <div class="container">
       <div class="eyebrow eyebrow--brand">{t.privacy.eyebrow}</div>
-      <h2 class="privacy__title">{t.privacy.title}</h2>
+      <h2 class="privacy__title"><Lines text={t.privacy.title} /></h2>
       <p class="privacy__lede">{t.privacy.lede}</p>
 
       <div class="grid grid--4 privacy__grid">
@@ -358,13 +396,23 @@ const { common, home: t } = getDictionary(locale);
   }
 
   .hero__chip {
-    font-family: var(--font-mono);
-    font-size: 11px;
-    letter-spacing: 0.06em;
-    color: var(--on-dark-muted);
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    line-height: 1.35;
+    font-weight: 600;
+    color: var(--on-dark);
     border: 1px solid var(--ink-3);
-    border-radius: var(--r-sm);
-    padding: 8px 12px;
+    border-radius: var(--r-pill);
+    padding: 8px 14px 8px 11px;
+  }
+
+  .hero__chip-icon {
+    width: 15px;
+    height: 15px;
+    flex: 0 0 auto;
+    color: var(--brand);
   }
 
   /* ---------- PROBLÉMATIQUE ---------- */
@@ -397,14 +445,45 @@ const { common, home: t } = getDictionary(locale);
     color: var(--white);
   }
 
+  .problem__banner {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-bottom: 24px;
+  }
+
   .problem__tag {
     font-family: var(--font-mono);
-    font-size: 11px;
-    letter-spacing: 0.12em;
-    color: var(--muted);
-    margin-bottom: 22px;
+    font-size: 15px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    color: var(--ink);
   }
   .problem__tag--brand { color: var(--brand); }
+
+  .problem__mark {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+  }
+
+  /* Le logo officiel est en encre noire : il ne tient que sur fond clair.
+     Sur la colonne « avec », on l'inverse pour le passer en blanc. */
+  .problem__mark--on :global(.logo__img) { filter: invert(1); }
+
+  /* Colonne « sans » : logo éteint et barré. */
+  .problem__mark--off { opacity: 0.5; }
+  .problem__mark--off :global(.logo__img) { filter: grayscale(1); }
+  .problem__mark--off::after {
+    content: '';
+    position: absolute;
+    left: -5px;
+    right: -5px;
+    top: 50%;
+    border-top: 2px solid var(--ink);
+    transform: rotate(-12deg);
+  }
 
   .problem__list {
     display: flex;
@@ -472,8 +551,9 @@ const { common, home: t } = getDictionary(locale);
   }
   .why__tag--muted { color: var(--muted); margin-bottom: 14px; }
 
+  /* Titre plus long depuis la relecture : 27px tient sur trois lignes. */
   .why__hero-title {
-    font-size: 30px;
+    font-size: 27px;
     font-weight: 800;
     margin: 0 0 10px;
     line-height: 1.15;

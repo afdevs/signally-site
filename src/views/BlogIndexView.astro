@@ -57,7 +57,13 @@ const filters: { label: string; value: string; count: number }[] = [
         ))}
       </div>
 
-      <p class="results" data-results aria-live="polite">
+      <p
+        class="results"
+        data-results
+        data-count-one={t.index.countOne}
+        data-count-many={t.index.countMany}
+        aria-live="polite"
+      >
         {posts.length} {posts.length > 1 ? t.index.countMany : t.index.countOne}
       </p>
 
@@ -175,7 +181,9 @@ const filters: { label: string; value: string; count: number }[] = [
     }
 
     if (results) {
-      results.textContent = `${visible} article${visible > 1 ? 's' : ''}`;
+      // Le libellé vient du dictionnaire de la langue courante, pas du français.
+      const noun = visible > 1 ? results.dataset.countMany : results.dataset.countOne;
+      results.textContent = `${visible} ${noun ?? ''}`.trim();
     }
     if (empty) empty.hidden = visible > 0;
 

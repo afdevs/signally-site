@@ -9,7 +9,7 @@ export const home = {
 
   hero: {
     badge: 'Email signatures & campaigns',
-    title: 'One signature.',
+    title: 'Your signatures for',
     /** Fourth entry repeats the first: the sgWord keyframe loops back to it. */
     rotating: [
       'Your whole company.',
@@ -18,8 +18,77 @@ export const home = {
       'Your whole company.',
     ],
     lede:
-      'Create, deploy and schedule signatures across your whole company from a single interface.',
-    badges: ['EU DATA HOSTING', 'NO EMAIL EVER READ', 'NO CREDIT CARD'],
+      'Create, deploy and schedule the signatures of your entire company in a few clicks, in complete security.',
+    /** Trust badges: the view adds a shield to each. */
+    badges: [
+      'Your data is hosted and secured in the EU',
+      'No email ever read: you send them from your own server',
+      'No credit card',
+    ],
+  },
+
+  /**
+   * Customer testimonials (Testimonials component).
+   *
+   * `items` stays empty until the quotes have been collected: the section
+   * then shows a "to be provided" card, like the missing screenshots in the
+   * App section. Filling the entries is enough to show the carousel.
+   */
+  testimonials: {
+    eyebrow: 'Testimonials',
+    title: 'Our customers are won over',
+    placeholder: 'QUOTE TO BE COLLECTED',
+    placeholderText:
+      'A quote from a company leader, their photo, job title and company. Three is enough: they scroll through here.',
+    items: [] as {
+      quote: string;
+      author: string;
+      role: string;
+      /** Path to a photo in /public, otherwise initials are used. */
+      photo?: string;
+    }[],
+  },
+
+  /** "The product, in three screens" section (AppTabs component). */
+  app: {
+    title: 'The product, in three screens.',
+    tablistAria: 'Application screens',
+    placeholderBadge: 'SCREENSHOT TO BE PROVIDED',
+    /** Same order as the technical tabs: editor, teams, campaigns. */
+    tabs: [
+      {
+        label: 'Editor',
+        alt: 'Signally signature editor',
+        placeholder: 'Screenshot of the signature editor',
+      },
+      {
+        label: 'Teams',
+        alt: 'Team and employee management',
+        placeholder: 'Screenshot of team and employee management',
+      },
+      {
+        label: 'Campaigns',
+        alt: 'Banner campaign schedule',
+        placeholder: 'Screenshot of the campaign schedule',
+      },
+    ],
+    notes: [
+      {
+        title: 'An editor, not a form',
+        text:
+          'You compose the template and Signally generates a signature in HTML that works on your desktops, your phones and your tablets.',
+      },
+      {
+        title: 'Teams, not files',
+        text:
+          'Every group and sub-group gets its signature, deployed automatically. Syncing happens straight from your company directory.',
+      },
+      {
+        title: 'A schedule, not a chase',
+        text:
+          'Schedule your communication banners in advance: they roll out to every employee to the minute.',
+      },
+    ],
   },
 
   problem: {
@@ -34,10 +103,10 @@ export const home = {
       'Three weeks of chasing IT',
     ],
     with: [
-      'One template for the entire organisation',
+      'One unified signature for your whole company, or a different one per group and subsidiary',
       'Fields filled straight from your directory',
       'Legal notices locked down',
-      'An update pushed out in minutes',
+      'Updates pushed out in 1 click',
     ],
     stats: [
       { value: '5 min', label: 'to roll out to the whole company' },
@@ -52,12 +121,12 @@ export const home = {
     title: 'Create, deploy, schedule.',
     deploy: {
       tag: 'DEPLOY',
-      title: 'One change. Everyone up to date.',
+      title: 'One change in the signature, everyone is up to date instantly.',
       text:
-        'The Microsoft and Google add-ins apply the signature to every employee, without them touching a thing.',
+        'Our Microsoft and Google add-ins apply the signature to every employee, with no action on their part.',
       rowStatus: 'UP TO DATE',
       metrics: [
-        { value: '5 min', label: 'for the whole company' },
+        { value: '1 min', label: 'for the whole company' },
         { value: '0', label: 'action from employees' },
       ],
     },
@@ -78,7 +147,11 @@ export const home = {
 
   campaigns: {
     eyebrow: 'Campaigns',
-    title: 'Your outgoing email, your first media channel.',
+    /** Two lines: the break is intentional (Lines component). */
+    title: [
+      'Your outgoing email, an untapped communication channel.',
+      'Make it your first media channel.',
+    ],
     lede:
       'A company of 100 people sends 300,000 emails a year. That many free advertising impressions.',
     points: [
@@ -90,11 +163,31 @@ export const home = {
     cta: 'Explore campaigns',
   },
 
+  /** "Campaign schedule" chart (CampaignPlanner component). */
+  planner: {
+    title: 'Campaign schedule',
+    period: 'Q1 2026',
+    months: ['JAN', 'FEB', 'MAR'],
+    /** Same order as the bar geometry, which stays in the view. */
+    rows: [
+      { team: 'Whole company', label: 'New year 2026' },
+      { team: 'Sales', label: 'Vivatech trade show' },
+      { team: 'HR', label: 'Recruitment campaign' },
+      { team: 'Support', label: 'New FAQ' },
+    ],
+    statsTitle: 'STATISTICS',
+    stats: [
+      { value: '4', label: 'active campaigns' },
+      { value: '312k', label: 'impressions / quarter' },
+      { value: '2.4%', label: 'average click rate' },
+    ],
+  },
+
   integrations: {
     eyebrow: 'Integrations',
     title: 'Integration, without the project plan.',
     note:
-      'The add-ins install from your admin console. No rerouting, no interruption.',
+      'The add-ins install securely from your own admin console. No rerouting, no interruption.',
     microsoft: {
       tag: 'MICROSOFT 365 · OUTLOOK · EXCHANGE',
       title: 'Microsoft add-in',
@@ -113,7 +206,10 @@ export const home = {
 
   privacy: {
     eyebrow: 'Privacy & compliance',
-    title: 'Signally adds a signature. Nothing else.',
+    title: [
+      'Protecting your data is our priority.',
+      'Signally adds a signature. Nothing else.',
+    ],
     lede: 'Your IT department’s first question, answered in one sentence.',
     cards: [
       {
@@ -146,7 +242,7 @@ export const home = {
 
   faq: {
     eyebrow: 'FAQ',
-    title: 'The questions we get asked before signing',
+    title: 'You have questions, we have answers',
     items: [
       {
         q: 'How do I set up the same email signature for every employee?',

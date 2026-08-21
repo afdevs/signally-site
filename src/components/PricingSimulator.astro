@@ -25,6 +25,8 @@ const s = simulate({ users: DEFAULTS.users });
 ---
 
 <div class="sim" data-sim data-sim-locale={intlLocale}>
+  {/* Le nombre d'utilisateurs est centré et à la taille du montant :
+      les deux chiffres du bloc se lisent alors comme une paire. */}
   <div class="sim__row">
     <label class="sim__label" for="sim-users-compact">{t.compact.label}</label>
     <span class="sim__value" data-sim-label="users">{s.users}</span>
@@ -67,18 +69,20 @@ const s = simulate({ users: DEFAULTS.users });
 
   .sim__row {
     display: flex;
-    justify-content: space-between;
-    align-items: baseline;
-    gap: 16px;
-    margin-bottom: 14px;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 16px;
+    text-align: center;
   }
 
   .sim__label { font-size: 15px; font-weight: 700; }
 
   .sim__value {
     font-family: var(--font-mono);
-    font-size: 22px;
+    font-size: 38px;
     font-weight: 700;
+    line-height: 1.05;
   }
 
   .sim input[type='range'] {
@@ -125,7 +129,7 @@ const s = simulate({ users: DEFAULTS.users });
 
   @media (max-width: 560px) {
     .sim { padding: 22px; }
-    .sim__amount { font-size: 30px; }
+    .sim__amount, .sim__value { font-size: 30px; }
   }
 </style>
 

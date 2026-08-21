@@ -10,14 +10,20 @@ export const campaigns = {
   hero: {
     eyebrow: 'Campañas y banners',
     title: 'El marketing por firma de correo: el canal que ya posees.',
-    lede:
-      'Una campaña de Signally es un banner colocado bajo la firma de tus empleados, dirigido a los equipos que elijas y planificado en el tiempo. Sin coste de medios, sin fricción y ante una audiencia que ya está en contacto contigo.',
+    /** Dos líneas: el corte antes de «Sin coste» lo impone la maqueta. */
+    lede: [
+      'Una campaña de Signally es un banner fijo o dinámico, colocado bajo la firma de tus empleados, dirigido a los equipos que elijas y planificado en el tiempo.',
+      'Sin coste de medios, sin fricción y ante una audiencia que ya está en contacto contigo.',
+    ],
   },
 
   uses: {
     title: 'Lo que puedes difundir sin escribir una newsletter',
-    lede:
-      'Más de nueve de cada diez correos profesionales se abren. Un banner de firma lo ven tus clientes, tus posibles clientes, tus proveedores y tus candidatos.',
+    /** Corte antes de «Un banner de firma», pedido en la revisión. */
+    lede: [
+      'Más de nueve de cada diez correos profesionales se abren.',
+      'Un banner de firma lo ven tus clientes, tus posibles clientes, tus proveedores y tus candidatos.',
+    ],
     items: [
       {
         tag: 'EVENTOS',
@@ -76,9 +82,60 @@ export const campaigns = {
           'Construye tu calendario por trimestres: cada campaña toma el relevo de la anterior.',
       },
       {
-        title: 'Clics atribuidos',
+        title: 'Una herramienta estadística eficaz y sencilla',
         text:
-          'Sabes qué banner generó tráfico, en qué periodo y desde qué equipo.',
+          'Clics atribuidos: sabes qué banner generó tráfico, en qué periodo y desde qué equipo.',
+      },
+    ],
+  },
+
+  /**
+   * Carrusel de ejemplos por sector. Son banners ficticios de
+   * ilustración: muestran el mismo mecanismo aplicado a distintas
+   * actividades. El tratamiento visual sigue en la vista, en el mismo orden.
+   */
+  sectors: {
+    title: 'La misma mecánica, sea cual sea tu actividad',
+    lede:
+      'Un banner, un mensaje, un botón. Lo que cambia de un sector a otro es lo que tienes que decir.',
+    prev: 'Ejemplo anterior',
+    next: 'Ejemplo siguiente',
+    items: [
+      {
+        tag: 'INMOBILIARIA',
+        title: 'Nueva vivienda en Bordeaux Chartrons',
+        sub: 'Casa de 4 estancias, 112 m², jardín',
+        cta: 'Visitar la vivienda',
+      },
+      {
+        tag: 'RESTAURACIÓN',
+        title: 'Ya está aquí la carta de otoño',
+        sub: 'De martes a sábado, comidas y cenas',
+        cta: 'Reservar mesa',
+      },
+      {
+        tag: 'COMERCIO Y RETAIL',
+        title: 'Nueva colección de primavera',
+        sub: 'Envío gratis hasta el 30 de abril',
+        cta: 'Ver la colección',
+      },
+      {
+        tag: 'SOFTWARE',
+        title: 'Seminario web de producto — jueves 12 de marzo',
+        sub: '30 minutos, demostración y preguntas',
+        cta: 'Inscribirse',
+      },
+      {
+        tag: 'CONSULTORÍA Y AUDITORÍA',
+        title: 'Barómetro 2026 del cumplimiento',
+        sub: '18 páginas, datos por sector',
+        cta: 'Descargar el estudio',
+      },
+      {
+        tag: 'MARCA EMPLEADORA',
+        title: 'Buscamos 12 perfiles',
+        sub: 'Tecnología, producto, ventas',
+        cta: 'Ver ofertas',
       },
     ],
   },

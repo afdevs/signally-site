@@ -9,7 +9,7 @@ export const useCases = {
 
   hero: {
     eyebrow: 'Casos de uso',
-    title: 'Tres áreas, tres problemas, una sola interfaz.',
+    title: 'Tres áreas, tres problemas, una sola solución, una sola interfaz.',
     lede:
       'La firma de correo es el único activo de comunicación que TI, marketing y RR. HH. usan a diario — y que nadie dirige de verdad.',
   },
@@ -19,7 +19,7 @@ export const useCases = {
       tag: 'TI',
       title: 'Dejar de ser el departamento de las firmas',
       text:
-        'Cada incorporación, cada salida y cada cambio de cargo abre un ticket. Multiplicado por tu rotación, son jornadas enteras.',
+        'Cada incorporación, cada salida y cada cambio de cargo abre un ticket. Multiplicado por tu rotación, consume mucho tiempo. Con Signally todo está automatizado y es transparente para los usuarios.',
       columns: [
         {
           label: 'LO QUE GANAS',

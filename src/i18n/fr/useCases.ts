@@ -9,7 +9,7 @@ export const useCases = {
 
   hero: {
     eyebrow: "Cas d'usage",
-    title: 'Trois métiers, trois problèmes, une seule interface.',
+    title: 'Trois métiers, trois problèmes, une seule solution, une seule interface.',
     lede:
       'La signature mail est le seul actif de communication que la DSI, le marketing et les RH utilisent tous les jours — et que personne ne pilote vraiment.',
   },
@@ -20,7 +20,7 @@ export const useCases = {
       tag: 'DSI / IT',
       title: "Arrêter d'être le service des signatures",
       text:
-        'Chaque arrivée, chaque départ, chaque changement de fonction déclenche un ticket. Multiplié par votre turnover, cela représente des journées entières.',
+        "Chaque arrivée, chaque départ, chaque changement de fonction déclenche un ticket. Multiplié par votre turnover, c'est chronophage. Avec Signally, tout est automatisé et transparent pour les utilisateurs.",
       columns: [
         {
           label: 'CE QUE VOUS GAGNEZ',

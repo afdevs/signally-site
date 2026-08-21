@@ -85,6 +85,10 @@ const clusterLabel = t.clusters[cluster];
     text-decoration: none;
     transform: translateY(-2px);
   }
+  /* `display: flex` ci-dessus l'emporte sur le `display: none` de l'attribut
+     `hidden` (feuille de l'agent) : sans cette règle, le filtre du blog
+     masque les cartes… qui restent visibles. */
+  .post[hidden] { display: none; }
 
   .post__rule { height: 6px; background: var(--brand); }
 

@@ -4,28 +4,36 @@
  * Illustration statique, comme dans le prototype.
  */
 
-const ROWS = [
-  { team: "Toute l'entreprise", label: 'Vœux 2026', left: 2, width: 56, style: 'brand' },
-  { team: 'Commerciaux', label: 'Salon Vivatech', left: 30, width: 52, style: 'ink' },
-  { team: 'RH', label: 'Campagne recrutement', left: 52, width: 44, style: 'subtle' },
-  { team: 'Support', label: 'Nouvelle FAQ', left: 8, width: 30, style: 'muted' },
+import { getDictionary } from '../i18n';
+import { localeFromPath, type Locale } from '../i18n/config';
+
+interface Props {
+  /** Déduite de l'URL par défaut : les pages n'ont pas à la passer. */
+  locale?: Locale;
+}
+
+const { locale = localeFromPath(Astro.url.pathname) } = Astro.props;
+const t = getDictionary(locale).home.planner;
+
+/** La géométrie des barres ne dépend pas de la langue : elle reste ici. */
+const GEOMETRY = [
+  { left: 2, width: 56, style: 'brand' },
+  { left: 30, width: 52, style: 'ink' },
+  { left: 52, width: 44, style: 'subtle' },
+  { left: 8, width: 30, style: 'muted' },
 ];
 
-const STATS = [
-  { value: '4', label: 'campagnes actives' },
-  { value: '312k', label: 'impressions / trimestre' },
-  { value: '2,4 %', label: 'taux de clic moyen' },
-];
+const ROWS = t.rows.map((row, i) => ({ ...row, ...GEOMETRY[i] }));
 ---
 
 <div class="planner">
   <div class="planner__head">
-    <div class="planner__title">Planning des campagnes</div>
-    <div class="planner__period">T1 2026</div>
+    <div class="planner__title">{t.title}</div>
+    <div class="planner__period">{t.period}</div>
   </div>
 
   <div class="planner__months" aria-hidden="true">
-    <span>JAN</span><span>FÉV</span><span>MAR</span>
+    {t.months.map((month) => <span>{month}</span>)}
   </div>
 
   <div class="planner__rows">
@@ -44,13 +52,17 @@ const STATS = [
     ))}
   </div>
 
+  {/* Bloc mis en avant : fond marque et intitulé, demandés par la relecture. */}
   <div class="planner__stats">
-    {STATS.map((stat) => (
-      <div>
-        <div class="planner__stat-value">{stat.value}</div>
-        <div class="planner__stat-label">{stat.label}</div>
-      </div>
-    ))}
+    <div class="planner__stats-title">{t.statsTitle}</div>
+    <div class="planner__stats-grid">
+      {t.stats.map((stat) => (
+        <div>
+          <div class="planner__stat-value">{stat.value}</div>
+          <div class="planner__stat-label">{stat.label}</div>
+        </div>
+      ))}
+    </div>
   </div>
 </div>
 
@@ -144,8 +156,21 @@ const STATS = [
 
   .planner__stats {
     margin-top: 20px;
-    padding-top: 18px;
-    border-top: 1px solid var(--line);
+    padding: 16px 18px 18px;
+    border: 1px solid var(--brand);
+    border-radius: var(--r-md);
+    background: var(--brand-subtle);
+  }
+
+  .planner__stats-title {
+    font-family: var(--font-mono);
+    font-size: 10.5px;
+    letter-spacing: 0.12em;
+    color: var(--brand-stronger);
+    margin-bottom: 12px;
+  }
+
+  .planner__stats-grid {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
     gap: 12px;
@@ -157,7 +182,7 @@ const STATS = [
     font-weight: 700;
   }
 
-  .planner__stat-label { font-size: 12px; color: var(--sec); }
+  .planner__stat-label { font-size: 12px; color: var(--ink-4); }
 
   /* Sous 560px, la colonne d'équipes fixe étrangle les barres :
      on repasse l'étiquette au-dessus de sa piste. */
@@ -166,6 +191,6 @@ const STATS = [
     .planner__months { padding-left: 0; }
     .planner__row { flex-direction: column; align-items: stretch; gap: 4px; }
     .planner__team { width: auto; flex: none; }
-    .planner__stats { grid-template-columns: 1fr; gap: 10px; }
+    .planner__stats-grid { grid-template-columns: 1fr; gap: 10px; }
   }
 </style>

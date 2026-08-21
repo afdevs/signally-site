@@ -9,7 +9,7 @@ export const home = {
 
   hero: {
     badge: 'Firmas de correo y campañas',
-    title: 'Una firma.',
+    title: 'Tus firmas para',
     /** La cuarta entrada repite la primera: el keyframe sgWord vuelve a ella. */
     rotating: [
       'Toda la empresa.',
@@ -18,8 +18,77 @@ export const home = {
       'Toda la empresa.',
     ],
     lede:
-      'Crea, despliega y programa las firmas de toda la empresa desde una sola interfaz.',
-    badges: ['DATOS ALOJADOS EN LA UE', 'SIN ACCESO A TUS CORREOS', 'SIN TARJETA'],
+      'Crea, despliega y programa las firmas de toda tu empresa en unos pocos clics y con total seguridad.',
+    /** Sellos de confianza: la vista les añade un escudo. */
+    badges: [
+      'Tus datos están alojados y protegidos en la UE',
+      'No leemos tus correos: los envías desde tu propio servidor',
+      'Sin tarjeta bancaria',
+    ],
+  },
+
+  /**
+   * Testimonios de clientes (componente Testimonials).
+   *
+   * `items` queda vacío mientras no se hayan recogido los testimonios: la
+   * sección muestra entonces un cartel «pendiente», igual que las capturas
+   * ausentes de la sección App. Basta con rellenar las entradas.
+   */
+  testimonials: {
+    eyebrow: 'Testimonios',
+    title: 'Nuestros clientes están encantados',
+    placeholder: 'TESTIMONIO PENDIENTE',
+    placeholderText:
+      'Un testimonio de un directivo, con su foto, su cargo y su empresa. Con tres basta: van pasando aquí.',
+    items: [] as {
+      quote: string;
+      author: string;
+      role: string;
+      /** Ruta de una foto en /public; si no, se usan las iniciales. */
+      photo?: string;
+    }[],
+  },
+
+  /** Sección «La herramienta, en tres pantallas» (componente AppTabs). */
+  app: {
+    title: 'La herramienta, en tres pantallas.',
+    tablistAria: 'Pantallas de la aplicación',
+    placeholderBadge: 'CAPTURA PENDIENTE',
+    /** Mismo orden que las pestañas técnicas: editor, equipos, campañas. */
+    tabs: [
+      {
+        label: 'Editor',
+        alt: 'Editor de firmas de Signally',
+        placeholder: 'Captura del editor de firmas',
+      },
+      {
+        label: 'Equipos',
+        alt: 'Gestión de equipos y empleados',
+        placeholder: 'Captura de la gestión de equipos y empleados',
+      },
+      {
+        label: 'Campañas',
+        alt: 'Planificación de campañas de banners',
+        placeholder: 'Captura de la planificación de campañas',
+      },
+    ],
+    notes: [
+      {
+        title: 'Un editor, no un formulario',
+        text:
+          'Tú compones la plantilla y Signally genera una firma en código HTML compatible con tus ordenadores, tus móviles y tus tablets.',
+      },
+      {
+        title: 'Equipos, no archivos',
+        text:
+          'Cada grupo y subgrupo recibe su firma, que se despliega automáticamente. La sincronización se hace directamente desde el directorio de tu empresa.',
+      },
+      {
+        title: 'Una planificación, no recordatorios',
+        text:
+          'Programa con antelación tus banners de comunicación: se despliegan en todos tus empleados al minuto exacto.',
+      },
+    ],
   },
 
   problem: {
@@ -34,10 +103,10 @@ export const home = {
       'Tres semanas persiguiendo a informática',
     ],
     with: [
-      'Una única plantilla para toda la organización',
-      'Campos rellenados desde tu directorio',
+      'Una firma unificada para toda tu empresa, o diferenciada por grupo y por filial',
+      'Campos rellenados directamente desde tu directorio',
       'Avisos legales bloqueados',
-      'Una actualización desplegada en minutos',
+      'Actualizaciones desplegadas en 1 clic',
     ],
     stats: [
       { value: '5 min', label: 'para desplegar en toda la empresa' },
@@ -52,12 +121,12 @@ export const home = {
     title: 'Crear, desplegar, programar.',
     deploy: {
       tag: 'DESPLEGAR',
-      title: 'Un cambio. Todo el mundo al día.',
+      title: 'Un cambio en la firma y todo el mundo está al día al instante.',
       text:
-        'Los complementos de Microsoft y Google aplican la firma a cada empleado, sin que tenga que tocar nada.',
+        'Nuestros complementos de Microsoft y Google aplican la firma a cada empleado, sin ninguna intervención por su parte.',
       rowStatus: 'AL DÍA',
       metrics: [
-        { value: '5 min', label: 'para toda la empresa' },
+        { value: '1 min', label: 'para toda la empresa' },
         { value: '0', label: 'acciones por parte del empleado' },
       ],
     },
@@ -78,7 +147,11 @@ export const home = {
 
   campaigns: {
     eyebrow: 'Campañas',
-    title: 'Tu correo saliente, tu primer medio.',
+    /** Dos líneas: el corte lo impone la maqueta (componente Lines). */
+    title: [
+      'Tu correo saliente, un canal de comunicación sin explotar.',
+      'Conviértelo en tu primer medio.',
+    ],
     lede:
       'Una empresa de 100 personas envía 300 000 correos al año. Otras tantas impresiones publicitarias gratuitas.',
     points: [
@@ -90,11 +163,31 @@ export const home = {
     cta: 'Descubrir las campañas',
   },
 
+  /** Diagrama «Planificación de campañas» (componente CampaignPlanner). */
+  planner: {
+    title: 'Planificación de campañas',
+    period: 'T1 2026',
+    months: ['ENE', 'FEB', 'MAR'],
+    /** Mismo orden que la geometría de las barras, que sigue en la vista. */
+    rows: [
+      { team: 'Toda la empresa', label: 'Felicitación 2026' },
+      { team: 'Comerciales', label: 'Feria Vivatech' },
+      { team: 'RR. HH.', label: 'Campaña de contratación' },
+      { team: 'Soporte', label: 'Nuevas preguntas frecuentes' },
+    ],
+    statsTitle: 'ESTADÍSTICAS',
+    stats: [
+      { value: '4', label: 'campañas activas' },
+      { value: '312k', label: 'impresiones / trimestre' },
+      { value: '2,4 %', label: 'tasa de clics media' },
+    ],
+  },
+
   integrations: {
     eyebrow: 'Integraciones',
     title: 'Una integración sin complicaciones.',
     note:
-      'Los complementos se instalan desde tu consola de administración. Sin redirecciones ni interrupciones.',
+      'Los complementos se instalan con total seguridad desde tu propia consola de administración. Sin redirecciones ni interrupciones.',
     microsoft: {
       tag: 'MICROSOFT 365 · OUTLOOK · EXCHANGE',
       title: 'Complemento de Microsoft',
@@ -113,7 +206,10 @@ export const home = {
 
   privacy: {
     eyebrow: 'Privacidad y cumplimiento',
-    title: 'Signally añade una firma. Nada más.',
+    title: [
+      'El respeto de tus datos es nuestra prioridad.',
+      'Signally añade una firma. Nada más.',
+    ],
     lede: 'La primera pregunta de tu departamento de TI, respondida en una frase.',
     cards: [
       {
@@ -146,7 +242,7 @@ export const home = {
 
   faq: {
     eyebrow: 'Preguntas frecuentes',
-    title: 'Las preguntas que nos hacen antes de firmar',
+    title: 'Tienes preguntas, nosotros respondemos',
     items: [
       {
         q: '¿Cómo implanto la misma firma de correo para todos los empleados?',

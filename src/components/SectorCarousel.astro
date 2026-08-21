@@ -1,0 +1,320 @@
+---
+/**
+ * Carrousel « la même mécanique, secteur par secteur ».
+ *
+ * Chaque carte montre le même dispositif — une fin de signature, puis
+ * la bannière — appliqué à un métier différent. Les bannières sont des
+ * exemples fictifs : leur texte vient du dictionnaire, leur habillage
+ * (couleurs, motif) reste ici, dans le même ordre.
+ */
+
+import { getDictionary } from '../i18n';
+import { localeFromPath, type Locale } from '../i18n/config';
+
+interface Props {
+  /** Déduite de l'URL par défaut : les pages n'ont pas à la passer. */
+  locale?: Locale;
+}
+
+const { locale = localeFromPath(Astro.url.pathname) } = Astro.props;
+const t = getDictionary(locale).campaigns.sectors;
+
+const STYLES = [
+  { bg: '#1F2A2E', ink: '#ffffff', subInk: 'rgba(255,255,255,.68)', ctaBg: '#F2C531', ctaInk: '#1A1A1A', motif: 'rgba(242,197,49,.30)', shape: 'dots' },
+  { bg: '#F2C531', ink: '#1A1A1A', subInk: '#4A4A46', ctaBg: '#1A1A1A', ctaInk: '#ffffff', motif: 'rgba(26,26,26,.18)', shape: 'rings' },
+  { bg: '#FDF3D4', ink: '#1A1A1A', subInk: '#5C5C58', ctaBg: '#1A1A1A', ctaInk: '#ffffff', motif: 'rgba(242,197,49,.85)', shape: 'stripes' },
+  { bg: '#1A1A1A', ink: '#ffffff', subInk: '#A9A7A0', ctaBg: '#F2C531', ctaInk: '#1A1A1A', motif: 'rgba(255,255,255,.16)', shape: 'rings' },
+  { bg: '#EDEFEA', ink: '#1A1A1A', subInk: '#5C5C58', ctaBg: '#1A1A1A', ctaInk: '#ffffff', motif: 'rgba(26,26,26,.14)', shape: 'dots' },
+  { bg: '#2A2622', ink: '#ffffff', subInk: '#A9A7A0', ctaBg: '#F2C531', ctaInk: '#1A1A1A', motif: 'rgba(242,197,49,.26)', shape: 'stripes' },
+];
+
+const cards = t.items.map((item, i) => ({ ...item, ...STYLES[i % STYLES.length] }));
+---
+
+<section class="section section--white">
+  <div class="container">
+    <div class="sectors__head">
+      <div>
+        <h2 class="sectors__title">{t.title}</h2>
+        <p class="sectors__lede">{t.lede}</p>
+      </div>
+      <div class="sectors__nav">
+        <button type="button" class="sectors__arrow" data-sectors-prev aria-label={t.prev}>
+          <svg viewBox="0 0 16 16" aria-hidden="true" focusable="false">
+            <path d="M10 2.5 4.5 8l5.5 5.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
+          </svg>
+        </button>
+        <button type="button" class="sectors__arrow" data-sectors-next aria-label={t.next}>
+          <svg viewBox="0 0 16 16" aria-hidden="true" focusable="false">
+            <path d="M6 2.5 11.5 8 6 13.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
+          </svg>
+        </button>
+      </div>
+    </div>
+
+    <ul class="sectors__track" data-sectors-track>
+      {cards.map((card) => (
+        <li class="sector">
+          {/* Fin de signature : elle situe la bannière sous le bloc contact. */}
+          <div class="sector__sig" aria-hidden="true">
+            <span class="sector__avatar"></span>
+            <span class="sector__sig-lines">
+              <span style="width:58%"></span>
+              <span style="width:40%"></span>
+            </span>
+          </div>
+
+          <div
+            class="sector__banner"
+            style={`background:${card.bg};color:${card.ink}`}
+          >
+            <span
+              class:list={['sector__motif', `sector__motif--${card.shape}`]}
+              style={`--motif:${card.motif}`}
+              aria-hidden="true"
+            ></span>
+            <span class="sector__copy">
+              <span class="sector__title">{card.title}</span>
+              <span class="sector__sub" style={`color:${card.subInk}`}>{card.sub}</span>
+            </span>
+            <span class="sector__cta" style={`background:${card.ctaBg};color:${card.ctaInk}`}>
+              {card.cta}
+            </span>
+          </div>
+
+          <div class="sector__tag">{card.tag}</div>
+        </li>
+      ))}
+    </ul>
+  </div>
+</section>
+
+<style>
+  .sectors__head {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    gap: 32px;
+    flex-wrap: wrap;
+    margin-bottom: 32px;
+  }
+
+  .sectors__title {
+    font-size: 34px;
+    line-height: 1.14;
+    letter-spacing: -0.02em;
+    font-weight: 800;
+    margin: 0 0 12px;
+    max-width: 640px;
+  }
+
+  .sectors__lede {
+    font-size: 17px;
+    line-height: 1.6;
+    color: var(--sec);
+    margin: 0;
+    max-width: 620px;
+  }
+
+  .sectors__nav { display: flex; gap: 8px; }
+
+  .sectors__arrow {
+    width: 40px;
+    height: 40px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid var(--line);
+    border-radius: var(--r-pill);
+    background: var(--white);
+    color: var(--ink);
+    cursor: pointer;
+    transition: border-color 0.15s ease, background 0.15s ease;
+  }
+  .sectors__arrow:hover { border-color: var(--ink); background: var(--soft); }
+  .sectors__arrow svg { width: 16px; height: 16px; }
+
+  /* ---------- Piste ---------- */
+  .sectors__track {
+    display: flex;
+    gap: 20px;
+    margin: 0;
+    padding: 4px 0 18px;
+    list-style: none;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    scroll-behavior: smooth;
+    scrollbar-width: thin;
+    /* La piste déborde du conteneur en gouttière pour laisser deviner
+       la carte suivante sans la couper net. */
+    scroll-padding-left: 0;
+  }
+
+  .sector {
+    flex: 0 0 clamp(268px, 76vw, 360px);
+    scroll-snap-align: start;
+    border: 1px solid var(--line);
+    border-radius: var(--r-xl);
+    background: var(--white);
+    padding: 20px 20px 16px;
+  }
+
+  /* ---------- Fin de signature ---------- */
+  .sector__sig {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding-bottom: 14px;
+    margin-bottom: 14px;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .sector__avatar {
+    width: 24px;
+    height: 24px;
+    border-radius: var(--r-pill);
+    background: var(--line);
+    flex: 0 0 auto;
+  }
+
+  .sector__sig-lines { display: flex; flex-direction: column; gap: 5px; flex: 1; }
+  .sector__sig-lines span {
+    height: 6px;
+    border-radius: var(--r-pill);
+    background: var(--line);
+    display: block;
+  }
+
+  /* ---------- Bannière ---------- */
+  .sector__banner {
+    position: relative;
+    overflow: hidden;
+    border-radius: 12px;
+    min-height: 104px;
+    padding: 16px 18px;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .sector__motif {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+  }
+  /* Trois habillages, alternés d'une carte à l'autre. */
+  .sector__motif--dots {
+    background-image: radial-gradient(var(--motif) 1.6px, transparent 1.6px);
+    background-size: 9px 9px;
+    mask-image: linear-gradient(250deg, #000 0 34%, transparent 62%);
+  }
+  .sector__motif--rings {
+    background-image: radial-gradient(
+      circle at 88% 18%,
+      transparent 0 22px,
+      var(--motif) 22px 24px,
+      transparent 24px 40px,
+      var(--motif) 40px 42px,
+      transparent 42px 60px,
+      var(--motif) 60px 62px,
+      transparent 62px
+    );
+  }
+  .sector__motif--stripes {
+    background-image: repeating-linear-gradient(
+      -50deg,
+      var(--motif) 0 3px,
+      transparent 3px 13px
+    );
+    mask-image: linear-gradient(250deg, #000 0 26%, transparent 58%);
+  }
+
+  .sector__copy { position: relative; display: block; }
+
+  .sector__title {
+    display: block;
+    font-weight: 800;
+    font-size: 15.5px;
+    line-height: 1.3;
+    letter-spacing: -0.01em;
+  }
+
+  .sector__sub { display: block; font-size: 12.5px; margin-top: 4px; }
+
+  .sector__cta {
+    position: relative;
+    margin-top: auto;
+    font-size: 12px;
+    font-weight: 700;
+    padding: 8px 13px;
+    border-radius: var(--r-pill);
+    white-space: nowrap;
+  }
+
+  .sector__tag {
+    font-family: var(--font-mono);
+    font-size: 10.5px;
+    letter-spacing: 0.12em;
+    color: var(--muted);
+    margin-top: 14px;
+  }
+
+  @media (max-width: 1024px) {
+    .sectors__title { font-size: 28px; }
+  }
+
+  @media (max-width: 560px) {
+    .sectors__title { font-size: 24px; }
+    .sectors__nav { display: none; }
+  }
+</style>
+
+<script>
+  const track = document.querySelector<HTMLElement>('[data-sectors-track]');
+
+  if (track) {
+    const step = () => {
+      const card = track.querySelector<HTMLElement>('.sector');
+      return card ? card.getBoundingClientRect().width + 20 : 300;
+    };
+
+    const atEnd = () => track.scrollLeft + track.clientWidth >= track.scrollWidth - 4;
+
+    const go = (delta: number) => track.scrollBy({ left: delta * step(), behavior: 'smooth' });
+
+    document
+      .querySelector<HTMLButtonElement>('[data-sectors-prev]')
+      ?.addEventListener('click', () => {
+        stop();
+        go(-1);
+      });
+
+    document
+      .querySelector<HTMLButtonElement>('[data-sectors-next]')
+      ?.addEventListener('click', () => {
+        stop();
+        go(1);
+      });
+
+    // Avance seule, et s'arrête définitivement dès que l'utilisateur
+    // prend la main — ou s'il a demandé moins d'animations.
+    const still = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    let timer = still
+      ? 0
+      : window.setInterval(() => {
+          if (atEnd()) track.scrollTo({ left: 0, behavior: 'smooth' });
+          else go(1);
+        }, 5000);
+
+    function stop() {
+      if (timer) window.clearInterval(timer);
+      timer = 0;
+    }
+
+    track.addEventListener('pointerdown', stop);
+    track.addEventListener('wheel', stop, { passive: true });
+    track.addEventListener('mouseenter', stop);
+  }
+</script>

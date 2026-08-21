@@ -10,14 +10,20 @@ export const campaigns = {
   hero: {
     eyebrow: 'Campaigns & banners',
     title: 'Email signature marketing: the channel you already own.',
-    lede:
-      'A Signally campaign is a banner placed below your employees’ signatures, targeted at the teams you choose and scheduled over time. No media spend, no friction, and an audience already in touch with you.',
+    /** Two lines: the break before "No media spend" is intentional. */
+    lede: [
+      'A Signally campaign is a banner — fixed or animated — placed below your employees’ signatures, targeted at the teams you choose and scheduled over time.',
+      'No media spend, no friction, and an audience already in touch with you.',
+    ],
   },
 
   uses: {
     title: 'What you can broadcast without writing a newsletter',
-    lede:
-      'More than nine business emails out of ten get opened. A signature banner is seen by your customers, your prospects, your suppliers and your candidates.',
+    /** Break before "A signature banner", requested at review. */
+    lede: [
+      'More than nine business emails out of ten get opened.',
+      'A signature banner is seen by your customers, your prospects, your suppliers and your candidates.',
+    ],
     items: [
       {
         tag: 'EVENTS',
@@ -76,9 +82,60 @@ export const campaigns = {
           'Build your calendar a quarter at a time: each campaign takes over from the last.',
       },
       {
-        title: 'Attributed clicks',
+        title: 'Analytics that are simple and effective',
         text:
-          'You know which banner drove traffic, over which period and from which team.',
+          'Attributed clicks: you know which banner drove traffic, over which period and from which team.',
+      },
+    ],
+  },
+
+  /**
+   * Sector example carousel. These are fictional illustration banners:
+   * they show the same mechanism applied to different lines of business.
+   * The visual treatment stays in the view, in the same order.
+   */
+  sectors: {
+    title: 'The same mechanics, whatever your business',
+    lede:
+      'One banner, one message, one button. What changes from one sector to the next is what you have to say.',
+    prev: 'Previous example',
+    next: 'Next example',
+    items: [
+      {
+        tag: 'REAL ESTATE',
+        title: 'New listing in Bordeaux Chartrons',
+        sub: 'House, 4 rooms, 112 m², garden',
+        cta: 'View this property',
+      },
+      {
+        tag: 'RESTAURANTS',
+        title: 'The autumn menu is here',
+        sub: 'Tuesday to Saturday, lunch and dinner',
+        cta: 'Book a table',
+      },
+      {
+        tag: 'RETAIL',
+        title: 'New spring collection',
+        sub: 'Free delivery until 30 April',
+        cta: 'See the collection',
+      },
+      {
+        tag: 'SOFTWARE',
+        title: 'Product webinar — Thursday 12 March',
+        sub: '30 minutes, demo and questions',
+        cta: 'Sign up',
+      },
+      {
+        tag: 'CONSULTING & AUDIT',
+        title: '2026 compliance benchmark',
+        sub: '18 pages, data by sector',
+        cta: 'Download the study',
+      },
+      {
+        tag: 'EMPLOYER BRAND',
+        title: 'We are hiring for 12 roles',
+        sub: 'Tech, product, sales',
+        cta: 'See openings',
       },
     ],
   },

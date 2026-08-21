@@ -1,0 +1,257 @@
+---
+/**
+ * Section « Nos clients sont conquis » : un verbatim qui défile.
+ *
+ * Les verbatims ne sont pas encore recueillis. Tant que
+ * `home.testimonials.items` est vide, la section affiche un cartouche
+ * « à fournir », comme les captures manquantes d'AppTabs — plutôt que
+ * d'inventer des citations attribuées à des clients. Renseigner les
+ * entrées du dictionnaire suffit à afficher le carrousel.
+ */
+
+import { getDictionary } from '../i18n';
+import { localeFromPath, type Locale } from '../i18n/config';
+
+interface Props {
+  /** Déduite de l'URL par défaut : les pages n'ont pas à la passer. */
+  locale?: Locale;
+}
+
+const { locale = localeFromPath(Astro.url.pathname) } = Astro.props;
+const t = getDictionary(locale).home.testimonials;
+
+/** Initiales de repli quand aucune photo n'est fournie. */
+const initials = (name: string) =>
+  name
+    .split(/\s+/)
+    .slice(0, 2)
+    .map((part) => part[0] ?? '')
+    .join('')
+    .toUpperCase();
+---
+
+<section class="section section--white">
+  <div class="container">
+    <div class="eyebrow">{t.eyebrow}</div>
+    <h2 class="testim__title">{t.title}</h2>
+
+    {t.items.length > 0 ? (
+      <div class="testim" data-testim>
+        <div class="testim__stage">
+          {t.items.map((item, i) => (
+            <figure class="testim__item" data-testim-slide hidden={i !== 0}>
+              <blockquote class="testim__quote">{item.quote}</blockquote>
+              <figcaption class="testim__author">
+                {item.photo ? (
+                  <img class="testim__photo" src={item.photo} alt="" width="56" height="56" />
+                ) : (
+                  <span class="testim__photo testim__photo--initials" aria-hidden="true">
+                    {initials(item.author)}
+                  </span>
+                )}
+                <span>
+                  <span class="testim__name">{item.author}</span>
+                  <span class="testim__role">{item.role}</span>
+                </span>
+              </figcaption>
+            </figure>
+          ))}
+        </div>
+
+        <div class="testim__dots" role="tablist" aria-label={t.title}>
+          {t.items.map((item, i) => (
+            <button
+              type="button"
+              role="tab"
+              class="testim__dot"
+              data-testim-dot={i}
+              aria-selected={i === 0 ? 'true' : 'false'}
+              aria-label={item.author}
+            ></button>
+          ))}
+        </div>
+      </div>
+    ) : (
+      <div class="testim__ph">
+        <span class="testim__ph-badge">{t.placeholder}</span>
+        <p class="testim__ph-text">{t.placeholderText}</p>
+        <code class="testim__ph-path">src/i18n/&lt;langue&gt;/home.ts → testimonials.items</code>
+      </div>
+    )}
+  </div>
+</section>
+
+<style>
+  .testim__title {
+    font-size: 38px;
+    line-height: 1.12;
+    letter-spacing: -0.025em;
+    font-weight: 800;
+    margin: 0 0 40px;
+    max-width: 700px;
+  }
+
+  .testim {
+    border: 1px solid var(--line);
+    border-radius: var(--r-2xl);
+    background: var(--soft);
+    padding: 40px 44px 32px;
+  }
+
+  .testim__stage { position: relative; }
+
+  .testim__item { margin: 0; animation: sgUp 0.5s ease-out both; }
+  .testim__item[hidden] { display: none; }
+
+  .testim__quote {
+    font-size: 24px;
+    line-height: 1.45;
+    font-weight: 700;
+    letter-spacing: -0.015em;
+    margin: 0 0 28px;
+    max-width: 900px;
+  }
+  /* Guillemets français, posés par la feuille de style : le dictionnaire
+     ne porte que le texte. */
+  .testim__quote::before { content: '« '; color: var(--brand-stronger); }
+  .testim__quote::after { content: ' »'; color: var(--brand-stronger); }
+
+  .testim__author {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+
+  .testim__photo {
+    width: 56px;
+    height: 56px;
+    border-radius: var(--r-pill);
+    object-fit: cover;
+    flex: 0 0 auto;
+    background: var(--brand-subtle);
+  }
+
+  .testim__photo--initials {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--font-mono);
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--ink);
+    border: 1px solid var(--brand);
+  }
+
+  .testim__name { display: block; font-weight: 800; font-size: 15.5px; }
+  .testim__role { display: block; font-size: 14px; color: var(--sec); margin-top: 2px; }
+
+  .testim__dots {
+    display: flex;
+    gap: 8px;
+    margin-top: 28px;
+    padding-top: 22px;
+    border-top: 1px solid var(--line);
+  }
+
+  .testim__dot {
+    width: 28px;
+    height: 6px;
+    padding: 0;
+    border: 0;
+    border-radius: var(--r-pill);
+    background: var(--line);
+    cursor: pointer;
+    transition: background 0.2s ease;
+  }
+  .testim__dot:hover { background: var(--brand-strong); }
+  .testim__dot[aria-selected='true'] { background: var(--ink); }
+
+  /* ---------- Cartouche « verbatim à recueillir » ---------- */
+  .testim__ph {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 14px;
+    border: 1px dashed var(--line);
+    border-radius: var(--r-2xl);
+    background: var(--soft);
+    padding: 40px 44px;
+  }
+
+  .testim__ph-badge {
+    font-family: var(--font-mono);
+    font-size: 10.5px;
+    letter-spacing: 0.12em;
+    color: var(--ink);
+    background: var(--brand);
+    padding: 6px 12px;
+    border-radius: var(--r-sm);
+  }
+
+  .testim__ph-text {
+    font-size: 17px;
+    line-height: 1.55;
+    font-weight: 700;
+    color: var(--ink-2);
+    margin: 0;
+    max-width: 620px;
+  }
+
+  .testim__ph-path {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--muted);
+    background: var(--white);
+    border: 1px solid var(--line);
+    padding: 6px 10px;
+    border-radius: var(--r-sm);
+  }
+
+  @media (max-width: 1024px) {
+    .testim__title { font-size: 30px; }
+    .testim__quote { font-size: 20px; }
+  }
+
+  @media (max-width: 560px) {
+    .testim__title { font-size: 25px; }
+    .testim, .testim__ph { padding: 26px 22px 22px; }
+    .testim__quote { font-size: 18px; }
+  }
+</style>
+
+<script>
+  const root = document.querySelector<HTMLElement>('[data-testim]');
+
+  if (root) {
+    const slides = Array.from(root.querySelectorAll<HTMLElement>('[data-testim-slide]'));
+    const dots = Array.from(root.querySelectorAll<HTMLButtonElement>('[data-testim-dot]'));
+    let current = 0;
+
+    function show(index: number) {
+      current = (index + slides.length) % slides.length;
+      slides.forEach((slide, i) => {
+        slide.hidden = i !== current;
+      });
+      dots.forEach((dot, i) => dot.setAttribute('aria-selected', String(i === current)));
+    }
+
+    dots.forEach((dot, i) =>
+      dot.addEventListener('click', () => {
+        show(i);
+        stop();
+      }),
+    );
+
+    // Le défilement automatique s'arrête au premier clic et n'existe pas
+    // si l'utilisateur a demandé moins d'animations.
+    const still = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    let timer = still || slides.length < 2 ? 0 : window.setInterval(() => show(current + 1), 7000);
+
+    function stop() {
+      if (timer) window.clearInterval(timer);
+      timer = 0;
+    }
+
+    root.addEventListener('mouseenter', stop);
+  }
+</script>

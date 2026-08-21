@@ -9,9 +9,9 @@ export const features = {
 
   hero: {
     eyebrow: 'Email signature generator',
-    title: 'Design a professional email signature, then roll it out across the company.',
+    title: 'Create a professional email signature and deploy it automatically across the company.',
     lede:
-      'The Signally editor covers both moments: designing a signature template that looks right, and distributing it to every employee with their own details.',
+      'The Signally editor lets you design a flawless signature, and its deployment happens automatically, with no action from your employees.',
     cta: 'Open the editor for free',
   },
 
@@ -31,14 +31,14 @@ export const features = {
       {
         title: 'Dynamic fields',
         text:
-          'Name, job title, department, phone, office: fields fill themselves from your Entra ID or Google Directory.',
+          'Name, job title, department, phone, office: fields fill themselves from your Microsoft Entra ID or Google Directory.',
       },
       {
         // Anchor shared across all three languages — see the French source.
         id: 'equipes',
         title: 'Teams & groups',
         text:
-          'One template per subsidiary, brand, department or country. Employees inherit the right one automatically.',
+          'One signature per subsidiary, brand, department or country. Employees inherit the right one automatically.',
       },
       {
         title: 'Administrator lock',
@@ -73,7 +73,7 @@ export const features = {
     items: [
       {
         n: '01',
-        title: 'You build the template',
+        title: 'You create your signature',
         text: 'From a template or a blank page, in your brand colours.',
       },
       {

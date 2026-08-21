@@ -16,7 +16,7 @@ export const home = {
 
   hero: {
     badge: 'Signatures mail & campagnes',
-    title: 'Une signature.',
+    title: 'Vos signatures pour',
     /**
      * Quatre entrées et non trois : le keyframe `sgWord` boucle en
      * revenant au premier mot, qui doit donc être répété à la fin.
@@ -28,8 +28,78 @@ export const home = {
       "Toute l'entreprise.",
     ],
     lede:
-      "Créez, déployez et planifiez les signatures de toute l'entreprise depuis une seule interface.",
-    badges: ['DONNÉES EN FRANCE', 'AUCUN E-MAIL LU', 'SANS CARTE BANCAIRE'],
+      'Créez, déployez et planifiez les signatures de toute votre entreprise en quelques clics et en totale sécurité.',
+    /** Badges de réassurance : la vue leur ajoute un bouclier. */
+    badges: [
+      'Vos données sont en France et en sécurité',
+      'Aucun e-mail lu : vous les envoyez via votre serveur',
+      'Sans carte bancaire',
+    ],
+  },
+
+  /**
+   * Témoignages clients (composant Testimonials).
+   *
+   * `items` est vide tant que les verbatims ne sont pas recueillis : la
+   * section affiche alors un cartouche « à fournir », comme les captures
+   * manquantes de la section App. Renseigner les entrées suffit à
+   * afficher le carrousel, sans toucher au code.
+   */
+  testimonials: {
+    eyebrow: 'Témoignages',
+    title: 'Nos clients sont conquis',
+    placeholder: 'VERBATIM À RECUEILLIR',
+    placeholderText:
+      "Un verbatim de dirigeant, sa photo, sa fonction et son entreprise. Trois suffisent : ils défilent ici.",
+    items: [] as {
+      quote: string;
+      author: string;
+      role: string;
+      /** Chemin d'une photo dans /public, sinon les initiales sont utilisées. */
+      photo?: string;
+    }[],
+  },
+
+  /** Section « L'outil, en trois écrans » (composant AppTabs). */
+  app: {
+    title: "L'outil, en trois écrans.",
+    tablistAria: "Écrans de l'application",
+    placeholderBadge: 'CAPTURE À FOURNIR',
+    /** Même ordre que les onglets techniques : éditeur, équipes, campagnes. */
+    tabs: [
+      {
+        label: 'Éditeur',
+        alt: 'Éditeur de signatures Signally',
+        placeholder: "Capture de l'éditeur de signatures",
+      },
+      {
+        label: 'Équipes',
+        alt: 'Gestion des équipes et des collaborateurs',
+        placeholder: 'Capture de la gestion des équipes et des collaborateurs',
+      },
+      {
+        label: 'Campagnes',
+        alt: 'Planning des campagnes de bannières',
+        placeholder: 'Capture du planning de campagnes',
+      },
+    ],
+    notes: [
+      {
+        title: 'Un éditeur, pas un formulaire',
+        text:
+          'Vous composez le gabarit et Signally génère une signature en code HTML compatible avec vos ordinateurs, vos mobiles et vos tablettes.',
+      },
+      {
+        title: 'Des équipes, pas des fichiers',
+        text:
+          "Chaque groupe et sous-groupe reçoit sa signature, qui se déploie automatiquement. La synchronisation se fait directement via l'annuaire de votre entreprise.",
+      },
+      {
+        title: 'Un planning, pas des relances',
+        text:
+          "Programmez à l'avance vos bannières de communication : elles se déploieront chez tous vos collaborateurs à la minute près.",
+      },
+    ],
   },
 
   problem: {
@@ -45,10 +115,10 @@ export const home = {
       'Des relances IT pendant trois semaines',
     ],
     with: [
-      "Un gabarit unique pour toute l'organisation",
-      'Des champs remplis depuis votre annuaire',
+      'Une signature unifiée pour toute votre entreprise, ou différenciée par groupe et par filiale',
+      'Des champs remplis directement depuis votre annuaire',
       'Des mentions légales verrouillées',
-      'Une mise à jour poussée en minutes',
+      'Des mises à jour poussées en 1 clic',
     ],
     stats: [
       { value: '5 min', label: "pour déployer à toute l'entreprise" },
@@ -63,12 +133,12 @@ export const home = {
     title: 'Créer, déployer, programmer.',
     deploy: {
       tag: 'DÉPLOYER',
-      title: 'Une modification. Tout le monde à jour.',
+      title: 'Un changement dans la signature, tout le monde est à jour instantanément.',
       text:
-        "Les add-ins Microsoft et Google appliquent la signature à chaque collaborateur, sans qu'il touche à quoi que ce soit.",
+        'Nos add-ins Microsoft et Google appliquent la signature à chaque collaborateur, sans aucune intervention de sa part.',
       rowStatus: 'À JOUR',
       metrics: [
-        { value: '5 min', label: "pour toute l'entreprise" },
+        { value: '1 min', label: "pour toute l'entreprise" },
         { value: '0', label: 'action côté collaborateur' },
       ],
     },
@@ -89,7 +159,11 @@ export const home = {
 
   campaigns: {
     eyebrow: 'Campagnes',
-    title: 'Vos e-mails sortants, votre premier média.',
+    /** Deux lignes : la coupure est voulue par la maquette (composant Lines). */
+    title: [
+      'Vos e-mails sortants, un canal de communication inexploité.',
+      'Faites-en votre premier média.',
+    ],
     lede:
       "Une entreprise de 100 personnes envoie 300 000 e-mails par an. Autant d'impressions publicitaires gratuites.",
     points: [
@@ -101,11 +175,31 @@ export const home = {
     cta: 'Découvrir les campagnes',
   },
 
+  /** Diagramme « Planning des campagnes » (composant CampaignPlanner). */
+  planner: {
+    title: 'Planning des campagnes',
+    period: 'T1 2026',
+    months: ['JAN', 'FÉV', 'MAR'],
+    /** Même ordre que la géométrie des barres, qui reste dans la vue. */
+    rows: [
+      { team: "Toute l'entreprise", label: 'Vœux 2026' },
+      { team: 'Commerciaux', label: 'Salon Vivatech' },
+      { team: 'RH', label: 'Campagne recrutement' },
+      { team: 'Support', label: 'Nouvelle FAQ' },
+    ],
+    statsTitle: 'STATISTIQUES',
+    stats: [
+      { value: '4', label: 'campagnes actives' },
+      { value: '312k', label: 'impressions / trimestre' },
+      { value: '2,4 %', label: 'taux de clic moyen' },
+    ],
+  },
+
   integrations: {
     eyebrow: 'Intégrations',
     title: 'Une intégration en toute simplicité.',
     note:
-      "Les add-ins s'installent depuis votre console d'administration. Aucun reroutage, aucune interruption.",
+      "Les add-ins s'installent depuis votre espace d'administration en toute sécurité. Aucun reroutage, aucune interruption.",
     microsoft: {
       tag: 'MICROSOFT 365 · OUTLOOK · EXCHANGE',
       title: 'Add-in Microsoft',
@@ -124,7 +218,10 @@ export const home = {
 
   privacy: {
     eyebrow: 'Confidentialité & conformité',
-    title: "Signally ajoute une signature. Rien d'autre.",
+    title: [
+      'Le respect de vos données, notre priorité.',
+      "Signally ajoute une signature. Rien d'autre.",
+    ],
     lede: 'La première question de votre DSI, et sa réponse en une phrase.',
     cards: [
       {
@@ -157,7 +254,7 @@ export const home = {
 
   faq: {
     eyebrow: 'FAQ',
-    title: 'Les questions que l’on nous pose avant de signer',
+    title: 'Vous avez des questions, nous vous répondons',
     items: [
       {
         q: 'Comment mettre en place une signature mail identique pour tous les collaborateurs ?',

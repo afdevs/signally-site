@@ -9,9 +9,9 @@ export const features = {
 
   hero: {
     eyebrow: 'Generador de firmas de correo',
-    title: 'Diseña una firma de correo profesional y despliégala en toda la empresa.',
+    title: 'Crea una firma de correo profesional y despliégala automáticamente en toda la empresa.',
     lede:
-      'El editor de Signally cubre los dos momentos: diseñar una plantilla de firma impecable y distribuirla a cada empleado con sus propios datos.',
+      'El editor de Signally te permite diseñar una firma impecable, y su despliegue se hace automáticamente, sin ninguna intervención de los empleados.',
     cta: 'Abrir el editor gratis',
   },
 
@@ -31,14 +31,14 @@ export const features = {
       {
         title: 'Campos dinámicos',
         text:
-          'Nombre, cargo, departamento, teléfono, oficina: los campos se rellenan desde tu directorio de Entra ID o Google Directory.',
+          'Nombre, cargo, departamento, teléfono, oficina: los campos se rellenan desde tu directorio de Microsoft Entra ID o Google Directory.',
       },
       {
         // Ancla compartida por los tres idiomas — ver el original francés.
         id: 'equipes',
         title: 'Equipos y grupos',
         text:
-          'Una plantilla por filial, marca, departamento o país. Los empleados heredan la correcta automáticamente.',
+          'Una firma por filial, marca, departamento o país. Los empleados heredan la correcta automáticamente.',
       },
       {
         title: 'Bloqueo de administrador',
@@ -73,7 +73,7 @@ export const features = {
     items: [
       {
         n: '01',
-        title: 'Creas la plantilla',
+        title: 'Creas tu firma',
         text: 'Desde una plantilla o una página en blanco, con los colores de tu marca.',
       },
       {

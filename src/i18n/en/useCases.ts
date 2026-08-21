@@ -9,7 +9,7 @@ export const useCases = {
 
   hero: {
     eyebrow: 'Use cases',
-    title: 'Three teams, three problems, one interface.',
+    title: 'Three teams, three problems, one solution, one interface.',
     lede:
       'The email signature is the only communication asset that IT, marketing and HR all use every day — and that nobody really steers.',
   },
@@ -19,7 +19,7 @@ export const useCases = {
       tag: 'IT',
       title: 'Stop being the signature department',
       text:
-        'Every arrival, every departure, every change of job title opens a ticket. Multiplied by your turnover, that adds up to whole days.',
+        'Every arrival, every departure, every change of job title opens a ticket. Multiplied by your turnover, it eats your time. With Signally everything is automated, and invisible to your users.',
       columns: [
         {
           label: 'WHAT YOU GAIN',

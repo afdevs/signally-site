@@ -101,6 +101,15 @@ img {
   border: 0;
 }
 
+/* Coupure de ligne voulue par la maquette (composant Lines). Elle ne
+   s'applique qu'aux grands écrans : en dessous, le texte se recompose
+   seul plutôt que de casser au mauvais endroit. */
+.br-wide { display: none; }
+
+@media (min-width: 1025px) {
+  .br-wide { display: inline; }
+}
+
 /* ============================================================
    PRIMITIVES DE MISE EN PAGE
    ============================================================ */

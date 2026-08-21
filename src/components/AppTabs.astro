@@ -9,48 +9,28 @@
  * fichiers suffit à les afficher, sans toucher au code.
  */
 
-const TABS = [
-  {
-    id: 'editor',
-    label: 'Éditeur',
-    alt: "Éditeur de signatures Signally",
-    placeholder: "Capture de l'éditeur de signatures",
-  },
-  {
-    id: 'teams',
-    label: 'Équipes',
-    alt: 'Gestion des équipes et des collaborateurs',
-    placeholder: 'Capture de la gestion des équipes et des collaborateurs',
-  },
-  {
-    id: 'campaigns',
-    label: 'Campagnes',
-    alt: 'Planning des campagnes de bannières',
-    placeholder: 'Capture du planning de campagnes',
-  },
-];
+import { getDictionary } from '../i18n';
+import { localeFromPath, type Locale } from '../i18n/config';
 
-const NOTES = [
-  {
-    title: 'Un éditeur, pas un formulaire',
-    text: 'Vous composez le gabarit, Signally génère un HTML compatible partout.',
-  },
-  {
-    title: 'Des équipes, pas des fichiers',
-    text: 'Chaque groupe hérite de son gabarit depuis votre annuaire.',
-  },
-  {
-    title: 'Un planning, pas des relances',
-    text: "Les bannières démarrent et s'arrêtent aux dates que vous fixez.",
-  },
-];
+interface Props {
+  /** Déduite de l'URL par défaut : les pages n'ont pas à la passer. */
+  locale?: Locale;
+}
+
+const { locale = localeFromPath(Astro.url.pathname) } = Astro.props;
+const t = getDictionary(locale).home.app;
+
+/** Les identifiants sont techniques : ils nomment les fichiers de capture. */
+const TAB_IDS = ['editor', 'teams', 'campaigns'] as const;
+
+const TABS = TAB_IDS.map((id, i) => ({ id, ...t.tabs[i] }));
 ---
 
 <section class="section section--soft">
   <div class="container">
     <div class="apptabs__head">
-      <h2 class="apptabs__title">L'outil, en trois écrans.</h2>
-      <div class="apptabs__tabs" role="tablist" aria-label="Écrans de l'application">
+      <h2 class="apptabs__title">{t.title}</h2>
+      <div class="apptabs__tabs" role="tablist" aria-label={t.tablistAria}>
         {TABS.map((tab, i) => (
           <button
             type="button"
@@ -94,7 +74,7 @@ const NOTES = [
               onerror="this.remove()"
             />
             <div class="apptabs__ph">
-              <span class="apptabs__ph-badge">CAPTURE À FOURNIR</span>
+              <span class="apptabs__ph-badge">{t.placeholderBadge}</span>
               <p class="apptabs__ph-text">{tab.placeholder}</p>
               <code class="apptabs__ph-path">public/screenshots/{tab.id}.png</code>
             </div>
@@ -104,7 +84,7 @@ const NOTES = [
     </div>
 
     <div class="apptabs__notes">
-      {NOTES.map((note) => (
+      {t.notes.map((note) => (
         <div>
           <div class="apptabs__note-title">{note.title}</div>
           <p class="apptabs__note-text">{note.text}</p>
