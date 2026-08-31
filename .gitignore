@@ -20,3 +20,6 @@ logs/
 # Barre oblique initiale : n'ignore que ce dossier-ci, surtout pas
 # public/screenshots/, qui accueille les captures de l'application.
 /screenshots/
+
+.agent/*
+CONTEXT.md
