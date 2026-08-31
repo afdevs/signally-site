@@ -94,59 +94,77 @@ const CLUSTER_ORDER = [
 const EXCLUDED_CLUSTERS = new Set(['Comparatifs & alternatives']);
 
 /**
- * Un fichier par page source. Le découpage suit les pages plutôt qu'un
- * regroupement thématique inventé : chaque fichier porte alors la vraie
- * route canonique de sa page dans son frontmatter, et le plafond de
- * 4096 octets par fichier cesse d'être le facteur limitant — c'est lui,
- * pas le budget global, qui contraint ce corpus.
+ * Un fichier par route, jamais deux routes dans un fichier.
  *
- * `at` désigne le chemin de l'objet portant `faq.items` dans le module.
- * `[]` = la racine du module. `integrations.ts` en porte deux, sous
- * `microsoft` et sous `google`, qui répondent de deux routes distinctes.
- * Le tout est déclaré plutôt que découvert : une FAQ déplacée doit faire
- * échouer le script, pas disparaître silencieusement du corpus.
+ * Deux raisons, et la seconde a mordu. D'abord le plafond de 4096 octets
+ * par fichier : c'est lui, pas le budget global, qui contraint ce
+ * corpus. Ensuite `KnowledgeBase::getRoutes()`, qui construit la liste
+ * blanche de liens du prompt en indexant par route — le dernier titre
+ * rencontré gagne. Comme ces fichiers portent des préfixes 9xx, ils
+ * trient après le corpus rédigé et gagnent donc toujours. Un fichier
+ * couvrant deux routes produisait le libellé
+ * « /integrations/microsoft-365-outlook — … Microsoft 365 and Google
+ * Workspace », c'est-à-dire une étiquette fausse pour la route.
+ *
+ * Corollaire : `title` est lu par le modèle comme le libellé de la
+ * route. Il décrit donc la page, pas le fichier.
+ *
+ * `at` désigne le chemin de l'objet portant `faq.items` dans le module ;
+ * `[]` = la racine. Déclaré plutôt que découvert : une FAQ déplacée doit
+ * faire échouer le script, pas disparaître silencieusement du corpus.
  */
 const FAQ_FILES = [
   {
     name: '910-faq-home.md',
-    title: 'Curated FAQ — general questions',
+    title: 'What the product does — common questions',
     module: 'home.ts',
-    pick: [{ at: [], route: '/' }],
+    at: [],
+    route: '/',
   },
   {
     name: '920-faq-features.md',
-    title: 'Curated FAQ — features',
+    title: 'Features — common questions',
     module: 'features.ts',
-    pick: [{ at: [], route: '/fonctionnalites' }],
+    at: [],
+    route: '/fonctionnalites',
   },
   {
     name: '930-faq-pricing.md',
-    title: 'Curated FAQ — pricing',
+    title: 'Pricing — common questions',
     module: 'pricing.ts',
-    pick: [{ at: [], route: '/tarifs' }],
+    at: [],
+    route: '/tarifs',
   },
   {
     name: '940-faq-campaigns.md',
-    title: 'Curated FAQ — banner campaigns',
+    title: 'Banner campaigns — common questions',
     module: 'campaigns.ts',
-    pick: [{ at: [], route: '/campagnes' }],
+    at: [],
+    route: '/campagnes',
   },
   {
-    name: '950-faq-integrations.md',
-    title: 'Curated FAQ — Microsoft 365 and Google Workspace',
+    name: '950-faq-microsoft.md',
+    title: 'Microsoft 365 and Outlook — common questions',
     module: 'integrations.ts',
-    pick: [
-      { at: ['microsoft'], route: '/integrations/microsoft-365-outlook' },
-      { at: ['google'], route: '/integrations/google-workspace-gmail' },
-    ],
+    at: ['microsoft'],
+    route: '/integrations/microsoft-365-outlook',
+  },
+  {
+    name: '955-faq-google.md',
+    title: 'Google Workspace and Gmail — common questions',
+    module: 'integrations.ts',
+    at: ['google'],
+    route: '/integrations/google-workspace-gmail',
   },
   {
     name: '960-faq-security.md',
-    title: 'Curated FAQ — security and GDPR',
+    title: 'Security and GDPR — common questions',
     module: 'security.ts',
-    pick: [{ at: [], route: '/securite-rgpd' }],
+    at: [],
+    route: '/securite-rgpd',
   },
 ];
+
 
 // ---------------------------------------------------------------------------
 // Lecture du frontmatter des articles
@@ -314,21 +332,16 @@ function renderBlogIndex(articles) {
   return lines.join('\n').replace(/\n+$/, '\n');
 }
 
-function renderFaqFile(spec, groups) {
-  const lines = [header(spec.title, groups[0].route)];
+function renderFaqFile(spec, items) {
+  const lines = [header(spec.title, spec.route)];
   lines.push('Answers curated for the public site. Reuse the substance, not the wording.', '');
 
-  const single = groups.length === 1;
-  for (const group of groups) {
-    if (!single) lines.push(`## ${group.route}`);
-    for (const item of group.items) {
-      lines.push(`- ${flatten(item.q)}`);
-      lines.push(`  ${trimSentences(item.a, WORDS_PER_FAQ)}`);
-    }
-    lines.push('');
+  for (const item of items) {
+    lines.push(`- ${flatten(item.q)}`);
+    lines.push(`  ${trimSentences(item.a, WORDS_PER_FAQ)}`);
   }
 
-  return lines.join('\n').replace(/\n+$/, '\n');
+  return lines.join('\n').replace(/\n+$/, '\n') ;
 }
 
 // ---------------------------------------------------------------------------
@@ -353,14 +366,14 @@ async function emit(name, contents) {
 await emit('900-blog-index.md', renderBlogIndex(articles));
 
 let pairs = 0;
+const routes = new Set();
 for (const spec of FAQ_FILES) {
-  const groups = [];
-  for (const source of spec.pick) {
-    const items = await readFaqItems(spec.module, source.at);
-    pairs += items.length;
-    groups.push({ route: source.route, items });
-  }
-  await emit(spec.name, renderFaqFile(spec, groups));
+  if (routes.has(spec.route)) fail(`route ${spec.route} déclarée deux fois : le libellé de liste blanche serait ambigu`);
+  routes.add(spec.route);
+
+  const items = await readFaqItems(spec.module, spec.at);
+  pairs += items.length;
+  await emit(spec.name, renderFaqFile(spec, items));
 }
 
 const total = written.reduce((sum, file) => sum + file.bytes, 0);
