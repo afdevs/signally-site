@@ -15,6 +15,19 @@ export type Tier = { upTo: number | null; rate: number };
  * Uniquement des nombres : les libellés de tranche (« De 11 à 50
  * utilisateurs ») vivent dans `src/i18n/<langue>/pricing.ts`, sans quoi
  * la grille serait à maintenir en trois exemplaires.
+ *
+ * DUPLIQUÉ VOLONTAIREMENT. La seconde copie est la constante `TIERS` de
+ * `API/src/Service/Support/Tool/SimulatePricingTool.php`, qui alimente
+ * l'outil `simulate_pricing` de l'assistant public : le prix qu'il
+ * annonce est calculé, jamais mémorisé. Un appel HTTP depuis la boucle
+ * d'outils immobiliserait un worker php-fpm à chaque question de tarif,
+ * et une constante tenue à jour vaut mieux qu'un prix halluciné.
+ * Modifier ici, modifier là-bas.
+ *
+ * Les bornes de paliers ne sont testées que côté API, dans
+ * `tests/Unit/Service/Support/SimulatePricingToolTest.php` : ce dépôt
+ * n'a pas de lanceur de tests. Une divergence introduite ici ne sera
+ * donc signalée par rien.
  */
 export const TIERS: Tier[] = [
   { upTo: 10, rate: 1.5 },
