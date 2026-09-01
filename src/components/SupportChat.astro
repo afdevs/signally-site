@@ -1,14 +1,19 @@
 ---
 import { getDictionary } from '../i18n';
 import { localeFromPath, type Locale } from '../i18n/config';
-import { pageKeyOf, type PageKey } from '../i18n/routes';
+import { localizedPath, pageKeyOf, type PageKey } from '../i18n/routes';
 
 /**
- * Coquille du widget d'assistance du site public.
+ * Widget d'assistance du site public.
  *
- * Tout sauf le réseau : le lanceur, le panneau, le clavier, le focus et la
- * copie. L'envoi vers `/api/chat` est la tâche suivante, qui reprend ce
- * fichier — d'où l'indicateur d'attente déjà présent mais jamais déclenché.
+ * Le lanceur, le panneau, le clavier, le focus, la copie, et l'envoi vers
+ * `/api/chat` et `/api/chat-feedback`.
+ *
+ * **La réponse du modèle ne devient jamais du HTML.** `parseAnswer` la découpe
+ * en jetons et le script construit des nœuds : ce dépôt n'embarque aucun
+ * assainisseur, et une sortie de modèle n'est pas du balisage de confiance.
+ * Aucun puits d'injection HTML n'a sa place dans ce fichier, et la barrière de
+ * la tâche le vérifie par un grep.
  *
  * Le lanceur est construit par le script, jamais par ce markup : sans
  * JavaScript un bouton de chat serait un bouton mort, et ce site se dégrade
@@ -32,7 +37,21 @@ const {
   pageKey = pageKeyOf(Astro.url.pathname),
 } = Astro.props;
 
-const t = getDictionary(locale).common.supportChat;
+const common = getDictionary(locale).common;
+const t = common.supportChat;
+
+/**
+ * La copie que seul le script utilise voyage en `data-*` : le dictionnaire
+ * n'est pas accessible depuis un script client, et dupliquer une chaîne
+ * traduite dans le script serait une seconde source de vérité.
+ *
+ * `errors.generic` fait exception au principe « le message d'erreur arrive
+ * déjà traduit » : il ne sert que lorsque la passerelle n'a rien pu dire du
+ * tout (panne réseau, corps illisible). Ce n'est pas une table de
+ * correspondance, c'est le seul cas où il n'y a aucun message à afficher.
+ */
+const contactPath = localizedPath('contact', locale);
+const contactLabel = common.pages.contact.label;
 ---
 
 <div
@@ -41,6 +60,14 @@ const t = getDictionary(locale).common.supportChat;
   data-locale={locale}
   data-page-key={pageKey}
   data-launcher-label={t.launcher}
+  data-unanswered-text={t.unanswered}
+  data-contact-path={contactPath}
+  data-contact-label={contactLabel}
+  data-retry-label={t.actions.retry}
+  data-up-label={t.feedback.up}
+  data-down-label={t.feedback.down}
+  data-thanks-label={t.feedback.thanks}
+  data-generic-error={t.errors.generic}
   hidden
 >
   <div
@@ -67,8 +94,9 @@ const t = getDictionary(locale).common.supportChat;
 
       <div class="support-chat__turns" data-turns></div>
 
-      {/* Région d'annonce polie posée dès maintenant : la tâche du réseau
-          n'aura qu'à la dévoiler et à y écrire. */}
+      {/* Région polie dévoilée pendant l'attente. Elle ne contient que des
+          points décoratifs : le dictionnaire n'a pas de chaîne « envoi en
+          cours », et en inventer une ici est interdit. */}
       <p class="support-chat__pending" data-pending aria-live="polite" hidden>
         <span class="support-chat__dots" aria-hidden="true">
           <span></span><span></span><span></span>
@@ -285,20 +313,143 @@ const t = getDictionary(locale).common.supportChat;
     color: var(--ink);
   }
 
+  /* Une réponse n'est pas un `<p>` mais un conteneur de blocs : le `pre-wrap`
+     hérité de `.support-chat__turn` garde les retours à la ligne simples d'un
+     paragraphe, et les marges des blocs sont reprises ici. */
+  .support-chat :global(.support-chat__turn--bot) {
+    justify-self: start;
+    max-width: 100%;
+    background: var(--soft);
+    color: var(--ink);
+  }
+  .support-chat :global(.support-chat__turn--bot > *) { margin: 0; }
+  .support-chat :global(.support-chat__turn--bot > * + *) { margin-top: 8px; }
+  .support-chat :global(.support-chat__turn--bot ul),
+  .support-chat :global(.support-chat__turn--bot ol) { padding-left: 20px; }
+  .support-chat :global(.support-chat__turn--bot li + li) { margin-top: 4px; }
+  .support-chat :global(.support-chat__turn--bot a) {
+    color: var(--ink);
+    font-weight: 600;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+  }
+
+  /* La réponse, sa mention éventuelle et ses pouces forment un seul groupe :
+     les pouces doivent coller à la réponse qu'ils notent, pas flotter à la
+     distance des tours. */
+  .support-chat :global(.support-chat__answer) {
+    display: grid;
+    justify-items: start;
+    gap: 6px;
+  }
+
+  .support-chat :global(.support-chat__note) {
+    margin: 0;
+    font-size: 13.5px;
+    line-height: 1.5;
+    color: var(--sec);
+  }
+  /* Souligné : un lien ne doit pas se distinguer par la seule couleur. */
+  .support-chat :global(.support-chat__note a) {
+    color: var(--ink);
+    font-weight: 600;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+  }
+
+  .support-chat :global(.support-chat__feedback) {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .support-chat :global(.support-chat__vote) {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    padding: 0;
+    color: var(--sec);
+    background: var(--white);
+    border: 1px solid var(--line);
+    border-radius: var(--r-sm);
+    cursor: pointer;
+    transition: color 0.15s ease, border-color 0.15s ease;
+  }
+  .support-chat :global(.support-chat__vote:hover:not(:disabled)) {
+    color: var(--ink);
+    border-color: var(--brand-stronger);
+  }
+  .support-chat :global(.support-chat__vote[aria-pressed='true']) {
+    color: var(--ink);
+    background: var(--brand-subtle);
+    border-color: var(--brand-stronger);
+  }
+  .support-chat :global(.support-chat__vote:disabled) { cursor: default; }
+
+  .support-chat :global(.support-chat__thanks) {
+    font-size: 13px;
+    color: var(--sec);
+  }
+
+  .support-chat :global(.support-chat__error) {
+    display: grid;
+    justify-items: start;
+    gap: 8px;
+    padding: 10px 12px;
+    font-size: 14px;
+    line-height: 1.5;
+    color: var(--ink);
+    background: var(--soft);
+    border: 1px solid var(--line);
+    border-radius: var(--r-md);
+  }
+  .support-chat :global(.support-chat__error p) { margin: 0; }
+
+  .support-chat :global(.support-chat__retry) {
+    font-family: var(--font-sans);
+    font-size: 13.5px;
+    font-weight: 600;
+    color: var(--ink);
+    background: var(--white);
+    border: 1px solid var(--line);
+    border-radius: var(--r-sm);
+    padding: 6px 12px;
+    cursor: pointer;
+    transition: border-color 0.15s ease;
+  }
+  .support-chat :global(.support-chat__retry:hover) { border-color: var(--brand-stronger); }
+
   @media (max-width: 480px) {
     .support-chat__panel { max-height: min(560px, calc(100vh - 108px)); }
   }
 </style>
 
 <script>
+  import { parseInline, splitBlocks, stripMarker } from '../lib/parseAnswer';
+
   const SVG_NS = 'http://www.w3.org/2000/svg';
 
-  /** Bulle de discussion construite en nœuds : le site n'a aucun assainisseur. */
-  function bubbleIcon(): SVGElement {
+  const BUBBLE_PATH =
+    'M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z';
+
+  const THUMB_UP_PATHS = [
+    'M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3z',
+    'M7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3',
+  ];
+
+  const THUMB_DOWN_PATHS = [
+    'M10 15v4a3 3 0 0 0 3 3l4-9V2H5.72a2 2 0 0 0-2 1.7l-1.38 9a2 2 0 0 0 2 2.3z',
+    'M17 2h2.67A2.31 2.31 0 0 1 22 4v7a2.31 2.31 0 0 1-2.33 2H17',
+  ];
+
+  /** Icônes construites en nœuds : le site n'a aucun assainisseur. */
+  function icon(size: number, paths: readonly string[]): SVGElement {
     const svg = document.createElementNS(SVG_NS, 'svg');
     svg.setAttribute('viewBox', '0 0 24 24');
-    svg.setAttribute('width', '24');
-    svg.setAttribute('height', '24');
+    svg.setAttribute('width', String(size));
+    svg.setAttribute('height', String(size));
     svg.setAttribute('fill', 'none');
     svg.setAttribute('stroke', 'currentColor');
     svg.setAttribute('stroke-width', '2');
@@ -307,13 +458,122 @@ const t = getDictionary(locale).common.supportChat;
     svg.setAttribute('aria-hidden', 'true');
     svg.setAttribute('focusable', 'false');
 
-    const path = document.createElementNS(SVG_NS, 'path');
-    path.setAttribute(
-      'd',
-      'M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z',
-    );
-    svg.append(path);
+    for (const d of paths) {
+      const path = document.createElementNS(SVG_NS, 'path');
+      path.setAttribute('d', d);
+      svg.append(path);
+    }
+
     return svg;
+  }
+
+  /**
+   * `localStorage` pour le visiteur, `sessionStorage` pour la conversation :
+   * un nouvel onglet doit repartir d'une conversation vierge tout en gardant
+   * le même quota journalier.
+   */
+  const VISITOR_KEY = 'signally.chat.visitorId';
+  const CONVERSATION_KEY = 'signally.chat.conversationId';
+
+  /**
+   * Copies des bornes de `chatRequestSchema`. Elles ne valident pas ce qu'on
+   * envoie — la passerelle le refait — mais ce qu'on relit du stockage : une
+   * valeur corrompue à la main produirait un 400 à chaque question, sans que
+   * le visiteur puisse rien y faire.
+   */
+  const VISITOR_PATTERN = /^[A-Za-z0-9_-]{8,64}$/;
+  const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+  type StorageKind = 'localStorage' | 'sessionStorage';
+
+  /**
+   * Le simple accès à `window.localStorage` lève quand le stockage est bloqué
+   * (navigation privée, réglage du navigateur, iframe tierce) : l'accès entier
+   * est sous `try`, pas seulement l'appel.
+   */
+  function readStored(kind: StorageKind, key: string): string | null {
+    try {
+      return window[kind].getItem(key);
+    } catch {
+      return null;
+    }
+  }
+
+  function writeStored(kind: StorageKind, key: string, value: string): void {
+    try {
+      window[kind].setItem(key, value);
+    } catch {
+      // Stockage indisponible : la valeur reste en mémoire pour la page.
+    }
+  }
+
+  /**
+   * `crypto.randomUUID` n'existe qu'en contexte sécurisé (`https`, ou
+   * `http://localhost`). Sur une origine non sécurisée non locale il est
+   * absent, alors que `getRandomValues` reste disponible ; `Math.random` ne
+   * ferme la marche que pour ne jamais lever. L'identifiant est opaque et
+   * n'autorise rien par lui-même : la propriété d'une conversation est
+   * vérifiée en base par l'API.
+   */
+  function randomToken(): string {
+    try {
+      if (typeof crypto !== 'undefined') {
+        if (typeof crypto.randomUUID === 'function') return crypto.randomUUID();
+
+        if (typeof crypto.getRandomValues === 'function') {
+          const bytes = crypto.getRandomValues(new Uint8Array(16));
+          return Array.from(bytes, (byte) => byte.toString(16).padStart(2, '0')).join('');
+        }
+      }
+    } catch {
+      // Repli ci-dessous.
+    }
+
+    let token = '';
+    for (let i = 0; i < 32; i += 1) token += Math.floor(Math.random() * 16).toString(16);
+    return token;
+  }
+
+  /** Réponse de la passerelle, relue champ par champ plutôt que crue sur parole. */
+  type ChatAnswer = {
+    ok: true;
+    conversationId: string;
+    messageId: string;
+    answer: string;
+    refused: boolean;
+    unanswered: boolean;
+  };
+
+  type ChatFailure = { ok: false; error: string; retryable: boolean };
+
+  function readChatResponse(payload: unknown): ChatAnswer | ChatFailure | undefined {
+    if (typeof payload !== 'object' || payload === null) return undefined;
+    const raw = payload as Record<string, unknown>;
+
+    if (raw.ok !== true) {
+      // `error` arrive déjà dans la langue de la page : le widget ne porte
+      // aucune table de correspondance et n'a rien à traduire.
+      return typeof raw.error === 'string'
+        ? { ok: false, error: raw.error, retryable: raw.retryable === true }
+        : undefined;
+    }
+
+    if (
+      typeof raw.conversationId !== 'string' ||
+      typeof raw.messageId !== 'string' ||
+      typeof raw.answer !== 'string'
+    ) {
+      return undefined;
+    }
+
+    return {
+      ok: true,
+      conversationId: raw.conversationId,
+      messageId: raw.messageId,
+      answer: raw.answer,
+      refused: raw.refused === true,
+      unanswered: raw.unanswered === true,
+    };
   }
 
   const root = document.querySelector<HTMLElement>('[data-support-chat]');
@@ -325,6 +585,19 @@ const t = getDictionary(locale).common.supportChat;
     const starters = root.querySelector<HTMLElement>('[data-starters]')!;
     const form = root.querySelector<HTMLFormElement>('[data-form]')!;
     const input = root.querySelector<HTMLTextAreaElement>('[data-input]')!;
+    const send = root.querySelector<HTMLButtonElement>('[data-send]')!;
+    const pendingIndicator = root.querySelector<HTMLElement>('[data-pending]')!;
+
+    const copy = {
+      unanswered: root.dataset.unansweredText ?? '',
+      contactPath: root.dataset.contactPath ?? '/',
+      contactLabel: root.dataset.contactLabel ?? '',
+      retry: root.dataset.retryLabel ?? '',
+      up: root.dataset.upLabel ?? '',
+      down: root.dataset.downLabel ?? '',
+      thanks: root.dataset.thanksLabel ?? '',
+      genericError: root.dataset.genericError ?? '',
+    };
 
     const launcher = document.createElement('button');
     launcher.type = 'button';
@@ -333,16 +606,45 @@ const t = getDictionary(locale).common.supportChat;
     launcher.title = root.dataset.launcherLabel!;
     launcher.setAttribute('aria-expanded', 'false');
     launcher.setAttribute('aria-controls', panel.id);
-    launcher.append(bubbleIcon());
+    launcher.append(icon(24, [BUBBLE_PATH]));
     root.append(launcher);
 
     // La racine reste `hidden` tant que le script n'a pas tourné : c'est ce
     // qui garantit qu'un visiteur sans JavaScript ne voit rien du tout.
     root.hidden = false;
 
+    // ---- État ----
+
+    /**
+     * Résolu à la première question et non à l'ouverture : rien de ce qui suit
+     * ne doit pouvoir empêcher le panneau de s'ouvrir.
+     */
+    let visitorId: string | null = null;
+
+    const ensureVisitorId = (): string => {
+      if (visitorId !== null) return visitorId;
+
+      const stored = readStored('localStorage', VISITOR_KEY);
+      visitorId = stored !== null && VISITOR_PATTERN.test(stored) ? stored : randomToken();
+      writeStored('localStorage', VISITOR_KEY, visitorId);
+      return visitorId;
+    };
+
+    const storedConversation = readStored('sessionStorage', CONVERSATION_KEY);
+    let conversationId: string | undefined =
+      storedConversation !== null && UUID_PATTERN.test(storedConversation)
+        ? storedConversation
+        : undefined;
+
+    let inFlight = false;
+    let lastQuestion = '';
+    let errorBlock: HTMLElement | null = null;
+
     const scrollToEnd = () => {
       log.scrollTop = log.scrollHeight;
     };
+
+    // ---- Ouverture, fermeture, clavier ----
 
     const open = () => {
       panel.hidden = false;
@@ -382,6 +684,173 @@ const t = getDictionary(locale).common.supportChat;
       });
     }
 
+    // ---- Rendu de la réponse ----
+
+    /**
+     * Une cible externe ne devient un `href` que si son schéma est http(s).
+     *
+     * Défense en profondeur : `localizeAnswerLinks` réduit déjà en texte brut
+     * tout lien hors liste blanche, donc cette branche ne devrait jamais
+     * s'exécuter. Si elle s'exécute quand même, elle ne doit pas transformer
+     * un `javascript:` en lien cliquable — un lien refusé perd son URL, jamais
+     * son libellé. Ce n'est pas la liste blanche refaite côté navigateur : ça
+     * ne relocalise rien et ça n'élargit rien.
+     */
+    const externalHref = (target: string): string | null => {
+      try {
+        const url = new URL(target, window.location.href);
+        return url.protocol === 'https:' || url.protocol === 'http:' ? url.href : null;
+      } catch {
+        return null;
+      }
+    };
+
+    const inlineNodes = (text: string): Node[] => {
+      const nodes: Node[] = [];
+
+      for (const token of parseInline(text)) {
+        if (token.type === 'text') {
+          nodes.push(document.createTextNode(token.text));
+          continue;
+        }
+
+        if (token.type === 'bold') {
+          const strong = document.createElement('strong');
+          strong.textContent = token.text;
+          nodes.push(strong);
+          continue;
+        }
+
+        // Un chemin interne part tel quel : la passerelle l'a déjà localisé et
+        // mis en liste blanche, le retoucher ici ne pourrait que l'affaiblir.
+        const href = token.internal ? token.target : externalHref(token.target);
+
+        if (href === null) {
+          nodes.push(document.createTextNode(token.label));
+          continue;
+        }
+
+        const link = document.createElement('a');
+        link.href = href;
+        link.textContent = token.label;
+
+        if (!token.internal) {
+          link.target = '_blank';
+          link.rel = 'noreferrer noopener';
+        }
+
+        nodes.push(link);
+      }
+
+      return nodes;
+    };
+
+    const answerNode = (text: string): HTMLElement => {
+      const container = document.createElement('div');
+      container.className = 'support-chat__turn support-chat__turn--bot';
+
+      for (const block of splitBlocks(text)) {
+        if (block.type === 'paragraph') {
+          const paragraph = document.createElement('p');
+          // Les retours simples restent des retours : le `pre-wrap` du style
+          // les rend sans qu'aucun `<br>` n'ait à être fabriqué.
+          paragraph.append(...inlineNodes(block.lines.join('\n')));
+          container.append(paragraph);
+          continue;
+        }
+
+        const list = document.createElement(block.ordered ? 'ol' : 'ul');
+        for (const line of block.lines) {
+          const item = document.createElement('li');
+          item.append(...inlineNodes(stripMarker(line)));
+          list.append(item);
+        }
+        container.append(list);
+      }
+
+      return container;
+    };
+
+    /** La copie du dictionnaire, suivie du lien vers la page de contact localisée. */
+    const unansweredNote = (): HTMLElement => {
+      const note = document.createElement('p');
+      note.className = 'support-chat__note';
+      note.append(copy.unanswered, ' ');
+
+      const link = document.createElement('a');
+      link.href = copy.contactPath;
+      link.textContent = copy.contactLabel;
+      note.append(link);
+
+      return note;
+    };
+
+    // ---- Pouces ----
+
+    const rate = async (messageId: string, feedback: 'up' | 'down'): Promise<boolean> => {
+      try {
+        const response = await fetch('/api/chat-feedback', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ messageId, visitorId: ensureVisitorId(), feedback }),
+        });
+        return response.ok;
+      } catch {
+        return false;
+      }
+    };
+
+    const feedbackRow = (messageId: string): HTMLElement => {
+      const row = document.createElement('div');
+      row.className = 'support-chat__feedback';
+
+      const thanks = document.createElement('span');
+      thanks.className = 'support-chat__thanks';
+      thanks.textContent = copy.thanks;
+      thanks.hidden = true;
+
+      const buttons: HTMLButtonElement[] = [];
+
+      const vote = async (button: HTMLButtonElement, feedback: 'up' | 'down') => {
+        // Un seul vote par message, et le retour est immédiat : un pouce qui
+        // attend un aller-retour paraît cassé.
+        for (const other of buttons) other.disabled = true;
+        button.setAttribute('aria-pressed', 'true');
+        thanks.hidden = false;
+
+        if (await rate(messageId, feedback)) return;
+
+        // Un pouce perdu n'est pas un incident pour le visiteur : on rend la
+        // main sans rien afficher plutôt que d'interrompre la conversation.
+        button.setAttribute('aria-pressed', 'false');
+        thanks.hidden = true;
+        for (const other of buttons) other.disabled = false;
+      };
+
+      const options = [
+        ['up', copy.up, THUMB_UP_PATHS],
+        ['down', copy.down, THUMB_DOWN_PATHS],
+      ] as const;
+
+      for (const [feedback, label, paths] of options) {
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.className = 'support-chat__vote';
+        button.setAttribute('aria-label', label);
+        button.title = label;
+        button.setAttribute('aria-pressed', 'false');
+        button.append(icon(15, paths));
+        button.addEventListener('click', () => void vote(button, feedback));
+        buttons.push(button);
+        row.append(button);
+      }
+
+      row.append(thanks);
+      return row;
+    };
+
+    // ---- Tours et erreurs ----
+
     const appendUserTurn = (text: string) => {
       starters.hidden = true;
       const turn = document.createElement('p');
@@ -389,6 +858,130 @@ const t = getDictionary(locale).common.supportChat;
       turn.textContent = text;
       turns.append(turn);
       scrollToEnd();
+    };
+
+    const appendAnswer = (data: ChatAnswer) => {
+      const group = document.createElement('div');
+      group.className = 'support-chat__answer';
+      group.append(answerNode(data.answer));
+
+      if (data.unanswered) group.append(unansweredNote());
+
+      // Un refus ne vient pas du corpus : le noter n'apprendrait rien.
+      if (!data.refused) group.append(feedbackRow(data.messageId));
+
+      turns.append(group);
+      scrollToEnd();
+    };
+
+    const clearError = () => {
+      errorBlock?.remove();
+      errorBlock = null;
+    };
+
+    const showError = (message: string, retryable: boolean) => {
+      clearError();
+
+      const block = document.createElement('div');
+      block.className = 'support-chat__error';
+      block.setAttribute('role', 'alert');
+
+      const text = document.createElement('p');
+      text.textContent = message;
+      block.append(text);
+
+      // Le bouton n'apparaît que si la passerelle a dit que réessayer a un
+      // sens : sur un quota atteint ou un message trop long, réémettre la même
+      // question ne ferait que reproduire la même erreur.
+      if (retryable && lastQuestion !== '') {
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.className = 'support-chat__retry';
+        button.textContent = copy.retry;
+        // La question repart telle quelle : le visiteur n'a pas à la retaper,
+        // et son tour est déjà affiché — inutile de le dupliquer.
+        button.addEventListener('click', () => void ask(lastQuestion, true));
+        block.append(button);
+      }
+
+      errorBlock = block;
+      turns.append(block);
+      scrollToEnd();
+    };
+
+    // ---- Envoi ----
+
+    /**
+     * Le contrat de `chatRequestSchema`, et rien de plus. Aucune transcription
+     * ne part : l'historique vit côté API, rejoué depuis le `conversationId`.
+     * Pas de `turnstileToken` non plus — c'est la tâche `b5d` qui le posera.
+     */
+    const requestBody = (question: string): Record<string, string> => {
+      const body: Record<string, string> = {
+        question,
+        visitorId: ensureVisitorId(),
+        locale: root.dataset.locale ?? 'fr',
+      };
+
+      // Absent au premier message : c'est ce qui déclenche le Turnstile.
+      if (conversationId !== undefined) body.conversationId = conversationId;
+
+      const pageKey = root.dataset.pageKey;
+      if (pageKey) body.pageKey = pageKey;
+
+      return body;
+    };
+
+    const ask = async (question: string, replay = false) => {
+      // Une seule requête à la fois : la conversation est séquentielle côté
+      // API, et deux questions parallèles s'y entremêleraient.
+      if (inFlight) return;
+
+      inFlight = true;
+      lastQuestion = question;
+      clearError();
+      if (!replay) appendUserTurn(question);
+
+      send.disabled = true;
+      pendingIndicator.hidden = false;
+      scrollToEnd();
+
+      try {
+        const response = await fetch('/api/chat', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify(requestBody(question)),
+        });
+
+        let payload: unknown;
+        try {
+          payload = await response.json();
+        } catch {
+          payload = undefined;
+        }
+
+        const data = readChatResponse(payload);
+
+        if (data === undefined) {
+          showError(copy.genericError, true);
+        } else if (data.ok) {
+          conversationId = data.conversationId;
+          writeStored('sessionStorage', CONVERSATION_KEY, data.conversationId);
+          appendAnswer(data);
+        } else {
+          showError(data.error, data.retryable);
+        }
+      } catch {
+        // Panne réseau : la passerelle n'a rien dit du tout, donc rien à
+        // afficher tel quel. C'est le seul cas où la copie du dictionnaire
+        // sert, et réessayer a un sens.
+        showError(copy.genericError, true);
+      } finally {
+        inFlight = false;
+        send.disabled = false;
+        pendingIndicator.hidden = true;
+        scrollToEnd();
+      }
     };
 
     input.addEventListener('keydown', (event) => {
@@ -401,13 +994,11 @@ const t = getDictionary(locale).common.supportChat;
     form.addEventListener('submit', (event) => {
       event.preventDefault();
       const question = input.value.trim();
-      if (question === '') return;
+      if (question === '' || inFlight) return;
 
-      // La question s'affiche, elle ne part nulle part : le transport est la
-      // tâche suivante, qui se branche ici.
-      appendUserTurn(question);
       input.value = '';
       input.focus();
+      void ask(question);
     });
   }
 </script>
