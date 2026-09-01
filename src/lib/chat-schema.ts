@@ -64,3 +64,28 @@ export function chatErrorKey(code: string): ChatErrorKey {
       return 'generic';
   }
 }
+
+/**
+ * Contrat d'entrée de la passerelle du pouce.
+ *
+ * Le `messageId` voyage dans le corps et non dans l'URL : `/api/chat-feedback`
+ * reste une route simple, là où un segment dynamique imposerait un fichier
+ * `[messageId].ts` sans rien apporter.
+ *
+ * Pas de champ `locale` : la langue est lue sur le corps brut avant validation,
+ * pour qu'un corps invalide produise quand même une erreur dans la langue de la
+ * page. Pas de champ de propriété non plus — l'API vérifie elle-même en base
+ * que le message appartient au visiteur (`findOwnedByVisitor`), et la passerelle
+ * n'a aucun moyen de le refaire.
+ */
+export const chatFeedbackSchema = z.object({
+  /** Identifiant du message noté, tel que l'API l'a renvoyé à la question. */
+  messageId: z.string().uuid(),
+
+  /** Même motif étroit que pour le chat : cette valeur voyage jusqu'à l'API. */
+  visitorId: z.string().regex(/^[A-Za-z0-9_-]{8,64}$/),
+
+  feedback: z.enum(['up', 'down']),
+});
+
+export type ChatFeedback = z.infer<typeof chatFeedbackSchema>;
