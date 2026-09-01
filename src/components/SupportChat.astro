@@ -1,0 +1,413 @@
+---
+import { getDictionary } from '../i18n';
+import { localeFromPath, type Locale } from '../i18n/config';
+import { pageKeyOf, type PageKey } from '../i18n/routes';
+
+/**
+ * Coquille du widget d'assistance du site public.
+ *
+ * Tout sauf le réseau : le lanceur, le panneau, le clavier, le focus et la
+ * copie. L'envoi vers `/api/chat` est la tâche suivante, qui reprend ce
+ * fichier — d'où l'indicateur d'attente déjà présent mais jamais déclenché.
+ *
+ * Le lanceur est construit par le script, jamais par ce markup : sans
+ * JavaScript un bouton de chat serait un bouton mort, et ce site se dégrade
+ * proprement partout ailleurs (le formulaire de contact poste sans JS, la FAQ
+ * est en `<details>`). Le panneau, lui, est rendu ici mais `hidden` avec sa
+ * racine : sans JS rien n'est visible ni exposé aux technologies d'assistance.
+ *
+ * Le `pageKey` accompagne la question à la place du chemin localisé, pour que
+ * le contexte du prompt reste stable d'une langue à l'autre.
+ */
+
+interface Props {
+  /** Déduite de l'URL par défaut : les pages n'ont pas à la passer. */
+  locale?: Locale;
+  /** Clé canonique de la page courante, si l'appelant l'a déjà calculée. */
+  pageKey?: PageKey;
+}
+
+const {
+  locale = localeFromPath(Astro.url.pathname),
+  pageKey = pageKeyOf(Astro.url.pathname),
+} = Astro.props;
+
+const t = getDictionary(locale).common.supportChat;
+---
+
+<div
+  class="support-chat"
+  data-support-chat
+  data-locale={locale}
+  data-page-key={pageKey}
+  data-launcher-label={t.launcher}
+  hidden
+>
+  <div
+    class="support-chat__panel"
+    id="support-chat-panel"
+    role="dialog"
+    aria-modal="false"
+    aria-labelledby="support-chat-title"
+    data-panel
+    hidden
+  >
+    <div class="support-chat__header">
+      <h2 class="support-chat__title" id="support-chat-title">{t.title}</h2>
+    </div>
+
+    <div class="support-chat__log" data-log>
+      <ul class="support-chat__starters" data-starters>
+        {t.starters.map((question) => (
+          <li>
+            <button type="button" class="support-chat__starter" data-starter>{question}</button>
+          </li>
+        ))}
+      </ul>
+
+      <div class="support-chat__turns" data-turns></div>
+
+      {/* Région d'annonce polie posée dès maintenant : la tâche du réseau
+          n'aura qu'à la dévoiler et à y écrire. */}
+      <p class="support-chat__pending" data-pending aria-live="polite" hidden>
+        <span class="support-chat__dots" aria-hidden="true">
+          <span></span><span></span><span></span>
+        </span>
+      </p>
+    </div>
+
+    <form class="support-chat__form" data-form>
+      <textarea
+        class="support-chat__input"
+        data-input
+        rows="2"
+        maxlength="2000"
+        placeholder={t.placeholder}
+        aria-label={t.placeholder}></textarea>
+      <button type="submit" class="btn btn--brand btn--sm support-chat__send" data-send>
+        {t.send}
+      </button>
+    </form>
+
+    <p class="support-chat__footer">{t.footer}</p>
+  </div>
+</div>
+
+<style>
+  /* 60 : au-dessus des mega-menus de l'en-tête (50), sous le lien
+     d'évitement (200) qui doit rester atteignable au premier Tab. */
+  .support-chat {
+    position: fixed;
+    right: max(16px, env(safe-area-inset-right));
+    bottom: max(16px, env(safe-area-inset-bottom));
+    z-index: 60;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 12px;
+  }
+  .support-chat[hidden] { display: none; }
+
+  /* Largeur relative : à 360 px le panneau se réduit au lieu de déborder. */
+  .support-chat__panel {
+    display: flex;
+    flex-direction: column;
+    width: min(384px, calc(100vw - 32px));
+    max-height: min(560px, calc(100vh - 132px));
+    background: var(--white);
+    border: 1px solid var(--line);
+    border-radius: var(--r-lg);
+    box-shadow: var(--shadow-menu);
+    overflow: hidden;
+    opacity: 0;
+    transform: translateY(8px);
+    transition: opacity 0.16s ease, transform 0.16s ease;
+  }
+  .support-chat__panel[hidden] { display: none; }
+  .support-chat__panel.is-open { opacity: 1; transform: none; }
+
+  .support-chat__header {
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .support-chat__title {
+    margin: 0;
+    font-size: 15px;
+    font-weight: 800;
+    color: var(--ink);
+  }
+
+  .support-chat__log {
+    flex: 1;
+    overflow-y: auto;
+    padding: 16px;
+  }
+
+  .support-chat__starters {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: 8px;
+  }
+  .support-chat__starters[hidden] { display: none; }
+
+  .support-chat__starter {
+    width: 100%;
+    text-align: left;
+    font-family: var(--font-sans);
+    font-size: 14px;
+    line-height: 1.45;
+    color: var(--ink);
+    background: var(--white);
+    border: 1px solid var(--line);
+    border-radius: var(--r-md);
+    padding: 10px 12px;
+    cursor: pointer;
+    transition: background 0.15s ease, border-color 0.15s ease;
+  }
+  .support-chat__starter:hover {
+    background: var(--soft);
+    border-color: var(--brand-stronger);
+  }
+
+  .support-chat__turns {
+    display: grid;
+    gap: 10px;
+  }
+  .support-chat__turns:not(:empty) { margin-top: 4px; }
+
+  .support-chat__pending { margin: 12px 0 0; }
+  .support-chat__pending[hidden] { display: none; }
+
+  .support-chat__dots {
+    display: inline-flex;
+    gap: 4px;
+    align-items: center;
+  }
+  .support-chat__dots span {
+    width: 5px;
+    height: 5px;
+    border-radius: var(--r-pill);
+    background: var(--muted);
+    animation: supportChatDot 1s ease-in-out infinite;
+  }
+  .support-chat__dots span:nth-child(2) { animation-delay: 0.15s; }
+  .support-chat__dots span:nth-child(3) { animation-delay: 0.3s; }
+
+  /* Neutralisé par le bloc `prefers-reduced-motion` global de tokens.css. */
+  @keyframes supportChatDot {
+    0%, 100% { opacity: 0.3; }
+    50% { opacity: 1; }
+  }
+
+  .support-chat__form {
+    display: flex;
+    align-items: flex-end;
+    gap: 8px;
+    padding: 12px 16px 0;
+    border-top: 1px solid var(--line);
+  }
+
+  .support-chat__input {
+    flex: 1;
+    min-width: 0;
+    box-sizing: border-box;
+    resize: none;
+    max-height: 96px;
+    padding: 10px 12px;
+    font-family: var(--font-sans);
+    font-size: 14.5px;
+    line-height: 1.45;
+    color: var(--ink);
+    background: var(--white);
+    border: 1px solid var(--line);
+    border-radius: var(--r-md);
+    transition: border-color 0.15s ease;
+  }
+  .support-chat__input:focus { border-color: var(--brand-stronger); }
+
+  /* `width: auto` reprend la main sur le `.btn { width: 100% }` mobile de
+     global.css, qui pousserait le bouton hors du panneau à 360 px. */
+  .support-chat__send {
+    flex: none;
+    width: auto;
+    font-size: 14px;
+    padding: 11px 16px;
+  }
+  .support-chat__send:disabled { opacity: 0.6; cursor: progress; }
+
+  /* La mention de génération automatique est une obligation d'information :
+     elle garde une taille lisible et un contraste de texte courant. */
+  .support-chat__footer {
+    margin: 0;
+    padding: 10px 16px 14px;
+    font-size: 13px;
+    line-height: 1.5;
+    color: var(--sec);
+  }
+
+  /* Le lanceur et les tours naissent du script : hors de portée du
+     hachage de portée d'Astro, donc déclarés en `:global`. */
+  .support-chat :global(.support-chat__launcher) {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 56px;
+    height: 56px;
+    border: 0;
+    border-radius: var(--r-pill);
+    background: var(--brand);
+    color: var(--brand-ink);
+    box-shadow: var(--shadow-menu);
+    cursor: pointer;
+    transition: background 0.16s ease;
+  }
+  .support-chat :global(.support-chat__launcher:hover) { background: var(--brand-strong); }
+
+  .support-chat :global(.support-chat__turn) {
+    margin: 0;
+    max-width: 85%;
+    padding: 9px 12px;
+    font-size: 14.5px;
+    line-height: 1.5;
+    border-radius: var(--r-md);
+    /* Une URL collée ne doit pas élargir le panneau, et les retours à la
+       ligne saisis en Maj+Entrée doivent survivre à l'affichage. */
+    overflow-wrap: anywhere;
+    white-space: pre-wrap;
+  }
+
+  .support-chat :global(.support-chat__turn--user) {
+    justify-self: end;
+    background: var(--brand-subtle);
+    color: var(--ink);
+  }
+
+  @media (max-width: 480px) {
+    .support-chat__panel { max-height: min(560px, calc(100vh - 108px)); }
+  }
+</style>
+
+<script>
+  const SVG_NS = 'http://www.w3.org/2000/svg';
+
+  /** Bulle de discussion construite en nœuds : le site n'a aucun assainisseur. */
+  function bubbleIcon(): SVGElement {
+    const svg = document.createElementNS(SVG_NS, 'svg');
+    svg.setAttribute('viewBox', '0 0 24 24');
+    svg.setAttribute('width', '24');
+    svg.setAttribute('height', '24');
+    svg.setAttribute('fill', 'none');
+    svg.setAttribute('stroke', 'currentColor');
+    svg.setAttribute('stroke-width', '2');
+    svg.setAttribute('stroke-linecap', 'round');
+    svg.setAttribute('stroke-linejoin', 'round');
+    svg.setAttribute('aria-hidden', 'true');
+    svg.setAttribute('focusable', 'false');
+
+    const path = document.createElementNS(SVG_NS, 'path');
+    path.setAttribute(
+      'd',
+      'M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z',
+    );
+    svg.append(path);
+    return svg;
+  }
+
+  const root = document.querySelector<HTMLElement>('[data-support-chat]');
+
+  if (root) {
+    const panel = root.querySelector<HTMLElement>('[data-panel]')!;
+    const log = root.querySelector<HTMLElement>('[data-log]')!;
+    const turns = root.querySelector<HTMLElement>('[data-turns]')!;
+    const starters = root.querySelector<HTMLElement>('[data-starters]')!;
+    const form = root.querySelector<HTMLFormElement>('[data-form]')!;
+    const input = root.querySelector<HTMLTextAreaElement>('[data-input]')!;
+
+    const launcher = document.createElement('button');
+    launcher.type = 'button';
+    launcher.className = 'support-chat__launcher';
+    launcher.setAttribute('aria-label', root.dataset.launcherLabel!);
+    launcher.title = root.dataset.launcherLabel!;
+    launcher.setAttribute('aria-expanded', 'false');
+    launcher.setAttribute('aria-controls', panel.id);
+    launcher.append(bubbleIcon());
+    root.append(launcher);
+
+    // La racine reste `hidden` tant que le script n'a pas tourné : c'est ce
+    // qui garantit qu'un visiteur sans JavaScript ne voit rien du tout.
+    root.hidden = false;
+
+    const scrollToEnd = () => {
+      log.scrollTop = log.scrollHeight;
+    };
+
+    const open = () => {
+      panel.hidden = false;
+      launcher.setAttribute('aria-expanded', 'true');
+      // Une image après le retrait de `hidden`, sinon la transition d'entrée
+      // n'a pas d'état de départ à animer.
+      requestAnimationFrame(() => panel.classList.add('is-open'));
+      input.focus();
+      scrollToEnd();
+    };
+
+    const close = () => {
+      panel.classList.remove('is-open');
+      panel.hidden = true;
+      launcher.setAttribute('aria-expanded', 'false');
+      launcher.focus();
+    };
+
+    // Le lanceur porte aussi la fermeture : le dictionnaire n'a pas de libellé
+    // « fermer », et inventer une chaîne ici est interdit. `aria-expanded`
+    // porte l'état, et Échap reste le raccourci attendu.
+    launcher.addEventListener('click', () => {
+      if (panel.hidden) open();
+      else close();
+    });
+
+    document.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape' && !panel.hidden) close();
+    });
+
+    // Les amorces remplissent le champ sans rien envoyer : le visiteur relit
+    // et complète sa question avant de la poser.
+    for (const starter of root.querySelectorAll<HTMLButtonElement>('[data-starter]')) {
+      starter.addEventListener('click', () => {
+        input.value = starter.textContent ?? '';
+        input.focus();
+      });
+    }
+
+    const appendUserTurn = (text: string) => {
+      starters.hidden = true;
+      const turn = document.createElement('p');
+      turn.className = 'support-chat__turn support-chat__turn--user';
+      turn.textContent = text;
+      turns.append(turn);
+      scrollToEnd();
+    };
+
+    input.addEventListener('keydown', (event) => {
+      if (event.key === 'Enter' && !event.shiftKey) {
+        event.preventDefault();
+        form.requestSubmit();
+      }
+    });
+
+    form.addEventListener('submit', (event) => {
+      event.preventDefault();
+      const question = input.value.trim();
+      if (question === '') return;
+
+      // La question s'affiche, elle ne part nulle part : le transport est la
+      // tâche suivante, qui se branche ici.
+      appendUserTurn(question);
+      input.value = '';
+      input.focus();
+    });
+  }
+</script>
