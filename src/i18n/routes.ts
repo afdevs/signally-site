@@ -9,7 +9,7 @@
  * sous `src/pages/`, sans quoi `npm run check:links` signalera un lien mort.
  */
 
-import { BLOG_LOCALES, DEFAULT_LOCALE, LOCALES, type Locale } from './config';
+import { BLOG_LOCALES, DEFAULT_LOCALE, LOCALES, type Locale } from './config.ts';
 
 export const PAGE_KEYS = [
   'home',
