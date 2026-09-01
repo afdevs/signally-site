@@ -63,6 +63,15 @@ export const security = {
       text:
         'Export de vos gabarits et suppression complète de votre espace sur demande, sans rétention cachée.',
     },
+    // Cadrée sur l'assistant du site : les six garanties ci-dessus décrivent le
+    // produit, alors que le contrôle anti-robot du site fait traiter l'adresse IP
+    // du visiteur par un tiers. Dire laquelle des deux surfaces est en cause est
+    // ce qui permet aux deux affirmations de coexister sans se contredire.
+    {
+      title: 'Assistant du site public',
+      text:
+        "Ce paragraphe porte sur l'assistant de ce site public, distinct du service de signatures décrit ci-dessus. Les conversations que vous y tenez sont conservées 90 jours, puis purgées. Au premier message d'une conversation, un contrôle anti-robot opéré par Cloudflare (Turnstile) s'exécute et traite votre adresse IP à cette seule fin. Aucun compte n'est requis et aucun identifiant nominatif ne vous est demandé.",
+    },
   ],
 
   /** Bloc laissé vide par le prototype : il attend des éléments contractuels réels. */
