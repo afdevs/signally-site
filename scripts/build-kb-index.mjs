@@ -16,12 +16,15 @@
  * Budget : `API/tools/check-site-kb.php` plafonne chaque fichier à
  * 4096 octets et le corpus entier à 35840. Les 19 articles rédigés à
  * la main en consomment déjà ~20 Ko : voir « Compromis » plus bas pour
- * ce que cela impose.
+ * ce que cela impose. Le script applique ces deux seuils lui-même avant
+ * d'écrire quoi que ce soit sur le disque. `KB_BUDGET_BYTES` surcharge
+ * le budget total pour les tests uniquement : n'affecte aucun prompt ni
+ * aucune sortie générée, seulement le seuil de comparaison.
  *
  * Usage : npm run build:kb-index
  */
 
-import { readdir, readFile, writeFile } from 'node:fs/promises';
+import { readdir, readFile, stat, writeFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import { dirname, join, resolve } from 'node:path';
 
@@ -30,6 +33,23 @@ const SITE = resolve(HERE, '..');
 const KB_DIR = resolve(SITE, '../api/src/Resources/site-kb');
 const BLOG_DIR = join(SITE, 'src/content/blog/fr');
 const I18N_DIR = join(SITE, 'src/i18n/fr');
+
+// ---------------------------------------------------------------------------
+// Budget du corpus — miroir des seuils de ../api/tools/check-site-kb.php
+// ---------------------------------------------------------------------------
+
+/** Plafond par fichier, en octets. Doit rester identique à check-site-kb.php. */
+const MAX_FILE_BYTES = 4096;
+
+/** Plafond du corpus entier, en octets. Doit rester identique à check-site-kb.php. */
+const DEFAULT_BUDGET_BYTES = 35840;
+
+/**
+ * Surcharge de test uniquement (voir le gate de la tâche c30, qui force un
+ * dépassement avec `KB_BUDGET_BYTES=1` pour prouver que l'échec fonctionne
+ * vraiment). N'entre dans aucun prompt, ne change aucune sortie générée.
+ */
+const BUDGET_BYTES = process.env.KB_BUDGET_BYTES ? Number(process.env.KB_BUDGET_BYTES) : DEFAULT_BUDGET_BYTES;
 
 // ---------------------------------------------------------------------------
 // Boutons de réglage
@@ -353,17 +373,23 @@ function fail(message) {
   process.exit(1);
 }
 
-const articles = await readArticles();
+const GENERATED_NAMES = new Set(['900-blog-index.md', ...FAQ_FILES.map((spec) => spec.name)]);
 
-const written = [];
-
-async function emit(name, contents) {
-  const bytes = Buffer.byteLength(contents, 'utf8');
-  await writeFile(join(KB_DIR, name), contents, 'utf8');
-  written.push({ name, bytes });
+/** Octets déjà sur le disque pour les fichiers du corpus que ce script ne régénère pas. */
+async function readManualBytes() {
+  const entries = await readdir(KB_DIR);
+  const manual = [];
+  for (const name of entries) {
+    if (!name.endsWith('.md') || GENERATED_NAMES.has(name)) continue;
+    const stats = await stat(join(KB_DIR, name));
+    manual.push({ name, bytes: stats.size });
+  }
+  return manual;
 }
 
-await emit('900-blog-index.md', renderBlogIndex(articles));
+const articles = await readArticles();
+
+const generatedFiles = [{ name: '900-blog-index.md', contents: renderBlogIndex(articles) }];
 
 let pairs = 0;
 const routes = new Set();
@@ -373,12 +399,36 @@ for (const spec of FAQ_FILES) {
 
   const items = await readFaqItems(spec.module, spec.at);
   pairs += items.length;
-  await emit(spec.name, renderFaqFile(spec, items));
+  generatedFiles.push({ name: spec.name, contents: renderFaqFile(spec, items) });
 }
 
-const total = written.reduce((sum, file) => sum + file.bytes, 0);
-for (const file of written) {
+for (const file of generatedFiles) {
+  file.bytes = Buffer.byteLength(file.contents, 'utf8');
+  if (file.bytes > MAX_FILE_BYTES) {
+    fail(`${file.name} dépasse le plafond de ${MAX_FILE_BYTES} o par fichier de ${file.bytes - MAX_FILE_BYTES} o (fait ${file.bytes} o)`);
+  }
+}
+
+// Vérifie le budget total du corpus avant d'écrire quoi que ce soit : un run
+// qui dépasse ne doit laisser aucun fichier modifié sur le disque. L'ordre
+// alphabétique reproduit le glob() trié de check-site-kb.php ; le premier
+// fichier dont le cumul dépasse le budget est celui qu'on nomme.
+const manualFiles = await readManualBytes();
+const allFiles = [...manualFiles, ...generatedFiles].sort((a, b) => (a.name < b.name ? -1 : a.name > b.name ? 1 : 0));
+
+let runningTotal = 0;
+for (const file of allFiles) {
+  runningTotal += file.bytes;
+  if (runningTotal > BUDGET_BYTES) {
+    fail(`${file.name} porte le total du corpus à ${runningTotal} o, dépassement de ${runningTotal - BUDGET_BYTES} o sur le budget de ${BUDGET_BYTES} o`);
+  }
+}
+
+for (const file of generatedFiles) {
+  await writeFile(join(KB_DIR, file.name), file.contents, 'utf8');
   console.log(`  ${file.name}  ${file.bytes} o`);
 }
-console.log(`\n${articles.length} articles, ${pairs} paires de FAQ, ${total} o générés dans ${KB_DIR}`);
-console.log('Vérifiez le budget : php ../api/tools/check-site-kb.php');
+
+const generatedBytes = generatedFiles.reduce((sum, file) => sum + file.bytes, 0);
+console.log(`\n${articles.length} articles, ${pairs} paires de FAQ, ${generatedBytes} o générés dans ${KB_DIR}`);
+console.log(`Budget respecté : ${runningTotal} / ${BUDGET_BYTES} o utilisés sur le corpus entier.`);
