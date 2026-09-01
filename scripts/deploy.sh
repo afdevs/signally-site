@@ -146,8 +146,10 @@ PM2_VER="$(pm2 -v 2>/dev/null || true)"
 PM2_VER="${PM2_VER##*$'\n'}"
 ok "node $(node -v), pm2 ${PM2_VER:-?}"
 
-[ -f "$ROOT/.env" ] || die '.env absent — MAILER_DSN, MAIL_FROM et MAIL_TO sont requis'
-for key in MAILER_DSN MAIL_FROM MAIL_TO; do
+[ -f "$ROOT/.env" ] || die '.env absent — MAILER_DSN, MAIL_FROM, MAIL_TO, SITE_CHAT_API_URL et SITE_CHAT_SHARED_SECRET sont requis'
+# Bloquantes : sans elles le formulaire ou le chat appellerait dans le vide. Hors liste à dessein :
+# PUBLIC_SITE_CHAT_ENABLED (absente = chat éteint) et Turnstile (verifyTurnstile rend true sans secret).
+for key in MAILER_DSN MAIL_FROM MAIL_TO SITE_CHAT_API_URL SITE_CHAT_SHARED_SECRET; do
   env_has_key "$ROOT/.env" "$key" || die ".env : $key manquant"
 done
 
