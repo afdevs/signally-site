@@ -23,6 +23,12 @@ import { localizedPath, pageKeyOf, type PageKey } from '../i18n/routes';
  *
  * Le `pageKey` accompagne la question à la place du chemin localisé, pour que
  * le contexte du prompt reste stable d'une langue à l'autre.
+ *
+ * Turnstile est la seule requête tierce du site, et elle n'est demandée qu'à
+ * l'ouverture du panneau. Ce chargement paresseux et conditionnel est un
+ * **choix de posture, pas une optimisation** : un visiteur qui n'ouvre pas le
+ * chat ne doit émettre aucune requête vers Cloudflare. Le détail est en tête
+ * de la section « Turnstile » du script.
  */
 
 interface Props {
@@ -52,6 +58,19 @@ const t = common.supportChat;
  */
 const contactPath = localizedPath('contact', locale);
 const contactLabel = common.pages.contact.label;
+
+/**
+ * Le préfixe `PUBLIC_` est ce qui autorise Astro à exposer la valeur au
+ * navigateur — c'est bien une clé de site, publique par nature. Le secret de
+ * vérification, lui, ne vit que dans `src/lib/turnstile.ts` côté serveur et
+ * n'a rien à faire dans ce fichier.
+ *
+ * Vide ou absente, rien n'est chargé et aucun jeton n'est envoyé : la
+ * passerelle accepte, parce que son propre secret est absent lui aussi. C'est
+ * ainsi que la fonction se livre avant les clés et se durcit ensuite par la
+ * seule configuration.
+ */
+const turnstileSiteKey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY ?? '';
 ---
 
 <div
@@ -68,6 +87,7 @@ const contactLabel = common.pages.contact.label;
   data-down-label={t.feedback.down}
   data-thanks-label={t.feedback.thanks}
   data-generic-error={t.errors.generic}
+  data-turnstile-site-key={turnstileSiteKey || undefined}
   hidden
 >
   <div
@@ -103,6 +123,12 @@ const contactLabel = common.pages.contact.label;
         </span>
       </p>
     </div>
+
+    {/* Conteneur du rendu explicite. Absent sans clé : sans lui, le script ne
+        demande rien à Cloudflare. Aucun attribut `cf-*` ici — le rendu
+        automatique s'exécuterait au chargement du script et viderait de son
+        sens le chargement paresseux. */}
+    {turnstileSiteKey && <div class="support-chat__turnstile" data-turnstile></div>}
 
     <form class="support-chat__form" data-form>
       <textarea
@@ -229,6 +255,14 @@ const contactLabel = common.pages.contact.label;
     0%, 100% { opacity: 0.3; }
     50% { opacity: 1; }
   }
+
+  /* En mode géré `interaction-only`, Cloudflare rend bien un enfant mais le
+     garde masqué tant qu'il ne réclame pas de défi. La gouttière verticale est
+     donc portée par l'enfant, pas par le conteneur : un enfant masqué ne rend
+     pas sa marge, et le conteneur reste de hauteur nulle tant qu'il n'y a rien
+     à montrer au-dessus du champ de saisie. */
+  .support-chat__turnstile { padding: 0 16px; }
+  .support-chat__turnstile > * { margin-top: 12px; }
 
   .support-chat__form {
     display: flex;
@@ -576,6 +610,38 @@ const contactLabel = common.pages.contact.label;
     };
   }
 
+  /**
+   * Le sous-ensemble de `window.turnstile` que ce widget utilise. Cloudflare
+   * ne publie pas de types et le dépôt n'ajoute pas de dépendance : mieux vaut
+   * un contrat écrit à la main, étroit et vérifié par le compilateur, qu'un
+   * `any` qui laisserait passer une faute de frappe dans un nom d'option.
+   */
+  type TurnstileApi = {
+    render: (
+      container: HTMLElement,
+      options: {
+        sitekey: string;
+        appearance?: 'always' | 'execute' | 'interaction-only';
+        callback?: (token: string) => void;
+        'error-callback'?: () => void;
+        'expired-callback'?: () => void;
+      }
+    ) => string | undefined;
+    reset: (widgetId?: string) => void;
+  };
+
+  const turnstileApi = (): TurnstileApi | undefined =>
+    (window as unknown as { turnstile?: TurnstileApi }).turnstile;
+
+  /**
+   * `render=explicit` coupe le rendu automatique ; `onload` est le rendez-vous
+   * documenté par Cloudflare pour savoir que `window.turnstile` est prêt —
+   * l'événement `load` du `<script>` ne le garantit pas.
+   */
+  const TURNSTILE_ONLOAD = 'signallyTurnstileReady';
+  const TURNSTILE_SRC =
+    `https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit&onload=${TURNSTILE_ONLOAD}`;
+
   const root = document.querySelector<HTMLElement>('[data-support-chat]');
 
   if (root) {
@@ -644,6 +710,102 @@ const contactLabel = common.pages.contact.label;
       log.scrollTop = log.scrollHeight;
     };
 
+    // ---- Turnstile ----
+
+    /**
+     * Le script de Cloudflare n'est demandé qu'à la **première ouverture** du
+     * panneau, et seulement si la clé publique est configurée.
+     *
+     * Ce chargement paresseux et conditionnel est un **choix de posture, pas
+     * une optimisation** : le site tient à n'émettre aucune requête tierce
+     * pour un visiteur qui n'ouvre pas le chat. Ne remonte donc pas ce
+     * `<script>` dans le markup ni dans `Base.astro`, n'ajoute ni `preconnect`
+     * ni `dns-prefetch` vers Cloudflare, et ne repasse pas au rendu automatique
+     * par attributs `cf-*` — le rendu automatique s'exécute au chargement du
+     * script et rendrait tout ceci inutile.
+     *
+     * Si Cloudflare ne répond pas, l'échec est silencieux pour le visiteur :
+     * le panneau s'ouvre, la question part sans jeton, et la passerelle
+     * décide. Un chat qui refuse de s'ouvrir parce qu'un tiers est en panne
+     * serait un pire résultat que le risque qu'il couvre.
+     */
+    const siteKey = root.dataset.turnstileSiteKey ?? '';
+    const turnstileHost = root.querySelector<HTMLElement>('[data-turnstile]');
+
+    /**
+     * Le jeton est à usage unique et expire : il ne vit qu'ici, en mémoire, le
+     * temps d'une question. Ni `localStorage`, ni `sessionStorage`, ni
+     * réutilisation d'un message au suivant — et jamais de journalisation.
+     */
+    let turnstileToken: string | null = null;
+    let turnstileWidget: string | undefined;
+    let turnstileRequested = false;
+
+    const renderTurnstile = () => {
+      const api = turnstileApi();
+      if (api === undefined || turnstileHost === null) return;
+
+      try {
+        turnstileWidget = api.render(turnstileHost, {
+          sitekey: siteKey,
+          // Mode géré : le défi ne se montre au visiteur que si Cloudflare le
+          // réclame, et il se montre dans le panneau, pas ailleurs.
+          appearance: 'interaction-only',
+          callback: (token) => {
+            turnstileToken = token;
+          },
+          // Un jeton expiré ou un défi en échec ne disent rien au visiteur :
+          // on repart sans jeton et la passerelle tranche.
+          'expired-callback': () => {
+            turnstileToken = null;
+          },
+          'error-callback': () => {
+            turnstileToken = null;
+          },
+        });
+      } catch {
+        // Turnstile indisponible : l'envoi partira sans jeton.
+      }
+    };
+
+    const loadTurnstile = () => {
+      // Pas de clé publique, pas de conteneur, ou script déjà demandé : rien
+      // ne part vers Cloudflare.
+      if (turnstileRequested || siteKey === '' || turnstileHost === null) return;
+      turnstileRequested = true;
+
+      (window as unknown as Record<string, unknown>)[TURNSTILE_ONLOAD] = renderTurnstile;
+
+      // `createElement`, jamais une chaîne de balisage : ce fichier n'a aucun
+      // puits d'injection HTML, y compris pour injecter son propre tiers.
+      // Aucun écouteur d'erreur : un chargement raté ne laisse simplement pas
+      // de `window.turnstile`, ce qui est déjà le comportement voulu.
+      const script = document.createElement('script');
+      script.src = TURNSTILE_SRC;
+      script.async = true;
+      document.head.append(script);
+    };
+
+    /** Consommer un jeton le retire de la mémoire : il ne resservira pas. */
+    const takeTurnstileToken = (): string | undefined => {
+      const token = turnstileToken ?? undefined;
+      turnstileToken = null;
+      return token;
+    };
+
+    /** Redemande un jeton frais après en avoir dépensé un sans aboutir. */
+    const resetTurnstile = () => {
+      const api = turnstileApi();
+      turnstileToken = null;
+      if (api === undefined || turnstileWidget === undefined) return;
+
+      try {
+        api.reset(turnstileWidget);
+      } catch {
+        // Rien à faire : l'envoi suivant partira sans jeton.
+      }
+    };
+
     // ---- Ouverture, fermeture, clavier ----
 
     const open = () => {
@@ -654,6 +816,8 @@ const contactLabel = common.pages.contact.label;
       requestAnimationFrame(() => panel.classList.add('is-open'));
       input.focus();
       scrollToEnd();
+      // La seule requête tierce du site part d'ici, et de nulle part ailleurs.
+      loadTurnstile();
     };
 
     const close = () => {
@@ -914,7 +1078,6 @@ const contactLabel = common.pages.contact.label;
     /**
      * Le contrat de `chatRequestSchema`, et rien de plus. Aucune transcription
      * ne part : l'historique vit côté API, rejoué depuis le `conversationId`.
-     * Pas de `turnstileToken` non plus — c'est la tâche `b5d` qui le posera.
      */
     const requestBody = (question: string): Record<string, string> => {
       const body: Record<string, string> = {
@@ -924,7 +1087,15 @@ const contactLabel = common.pages.contact.label;
       };
 
       // Absent au premier message : c'est ce qui déclenche le Turnstile.
-      if (conversationId !== undefined) body.conversationId = conversationId;
+      if (conversationId !== undefined) {
+        body.conversationId = conversationId;
+      } else {
+        // Le jeton n'accompagne donc que le premier message, et seulement s'il
+        // y en a un : sans clé publique, ou si Cloudflare n'a rien rendu, on
+        // part sans et la passerelle décide.
+        const token = takeTurnstileToken();
+        if (token !== undefined) body.turnstileToken = token;
+      }
 
       const pageKey = root.dataset.pageKey;
       if (pageKey) body.pageKey = pageKey;
@@ -946,11 +1117,14 @@ const contactLabel = common.pages.contact.label;
       pendingIndicator.hidden = false;
       scrollToEnd();
 
+      const body = requestBody(question);
+      const spentToken = body.turnstileToken !== undefined;
+
       try {
         const response = await fetch('/api/chat', {
           method: 'POST',
           headers: { 'content-type': 'application/json' },
-          body: JSON.stringify(requestBody(question)),
+          body: JSON.stringify(body),
         });
 
         let payload: unknown;
@@ -981,6 +1155,10 @@ const contactLabel = common.pages.contact.label;
         send.disabled = false;
         pendingIndicator.hidden = true;
         scrollToEnd();
+
+        // Le jeton dépensé ne vaut plus rien. Si ce message n'a pas ouvert de
+        // conversation, la tentative suivante en réclamera un neuf.
+        if (spentToken && conversationId === undefined) resetTurnstile();
       }
     };
 
