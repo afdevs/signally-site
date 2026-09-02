@@ -4,7 +4,7 @@
  *
  * Le corpus vit dans le dépôt API pour que sa construction reste
  * autonome ; ce script est la seule chose qui l'écrit. Il lit le
- * frontmatter des articles français et les dictionnaires `src/i18n/fr`,
+ * frontmatter des articles français et les dictionnaires `src/i18n/en`,
  * puis émet des fichiers markdown compacts et déterministes.
  *
  * Déterminisme : c'est la contrainte dure. Le corpus forme le préfixe
@@ -32,7 +32,7 @@ const HERE = dirname(fileURLToPath(import.meta.url));
 const SITE = resolve(HERE, '..');
 const KB_DIR = resolve(SITE, '../api/src/Resources/site-kb');
 const BLOG_DIR = join(SITE, 'src/content/blog/fr');
-const I18N_DIR = join(SITE, 'src/i18n/fr');
+const I18N_DIR = join(SITE, 'src/i18n/en');
 
 // ---------------------------------------------------------------------------
 // Budget du corpus — miroir des seuils de ../api/tools/check-site-kb.php
@@ -112,6 +112,25 @@ const CLUSTER_ORDER = [
  * qui parle à des prospects. Filtre réversible une fois le conseil rendu.
  */
 const EXCLUDED_CLUSTERS = new Set(['Comparatifs & alternatives']);
+
+/**
+ * Intitulé anglais de chaque grappe pour le seul rendu de l'index.
+ *
+ * `CLUSTER_ORDER` doit rester en français : ses valeurs sont comparées
+ * telles quelles au `cluster:` du frontmatter des articles, et un écart
+ * arrête le script. Cette table sépare donc la clé de tri de son
+ * intitulé affiché, pour que le corpus reste entièrement anglais
+ * (invariant : un seul corpus, un seul préfixe mis en cache) sans
+ * toucher aux articles.
+ */
+const CLUSTER_LABELS = {
+  'Créer sa signature': 'Creating your signature',
+  'Microsoft 365 & Outlook': 'Microsoft 365 & Outlook',
+  'Google Workspace & Gmail': 'Google Workspace & Gmail',
+  'Campagnes & bannières': 'Campaigns & banners',
+  'Gestion & gouvernance': 'Management & governance',
+  'RGPD & sécurité': 'GDPR & security',
+};
 
 /**
  * Un fichier par route, jamais deux routes dans un fichier.
@@ -341,7 +360,11 @@ function renderBlogIndex(articles) {
   for (const cluster of CLUSTER_ORDER) {
     const group = articles.filter((article) => article.cluster === cluster);
     if (group.length === 0) continue;
-    lines.push(`## ${cluster}`);
+    // Une grappe ajoutée à CLUSTER_ORDER sans intitulé émettrait « ## undefined »
+    // dans le corpus sans rien signaler : mieux vaut arrêter le script.
+    const label = CLUSTER_LABELS[cluster];
+    if (!label) fail(`grappe « ${cluster} » sans intitulé dans CLUSTER_LABELS`);
+    lines.push(`## ${label}`);
     for (const article of group) {
       const summary = WORDS_PER_ARTICLE > 0 ? trimWords(article.summary.join(' '), WORDS_PER_ARTICLE) : '';
       lines.push(summary === '' ? `- /blog/${article.slug}` : `- /blog/${article.slug} — ${summary}`);
