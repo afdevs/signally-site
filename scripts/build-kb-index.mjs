@@ -86,6 +86,45 @@ const WORDS_PER_FAQ = 14;
 /** Marqueur de troncature, utilisé seulement si un résumé est coupé au mot. */
 const ELLIPSIS = '…';
 
+/**
+ * Réponse de remplacement pour les paires de FAQ tarifaires. La règle 4 du
+ * prompt site (`API/src/Resources/support-prompt/site.md`) interdit au
+ * modèle d'énoncer un prix qui ne vient pas de l'outil `simulate_pricing` ;
+ * un montant présent ici serait une source que le modèle peut lire et
+ * citer, contournant la règle par sa propre matière première. Une seule
+ * phrase, en anglais, pour toutes les paires concernées : elle renvoie
+ * vers /tarifs et dit que le montant dépend du nombre d'utilisateurs, sans
+ * jamais en citer un. Une seule phrase entière : `trimSentences` conserve
+ * toujours la première phrase en totalité, donc rien n'est perdu à la
+ * troncature quel que soit `WORDS_PER_FAQ`.
+ */
+const PRICE_FAQ_ANSWER =
+  'Pricing is volume-based and depends on how many users the account has, so the exact rate is quoted on /tarifs rather than here, where a calculator turns a user count into a precise monthly price.';
+
+/**
+ * Paires de FAQ dont la réponse est remplacée par `PRICE_FAQ_ANSWER`,
+ * repérées par module + question exacte. Déclaré plutôt que détecté par
+ * une expression régulière sur `€`/`EUR` à l'exécution : une détection
+ * heuristique rendrait la sortie dépendante de la rédaction de la réponse
+ * et casserait la stabilité du préfixe. La question reste inchangée dans
+ * le corpus : c'est elle qui aide le modèle à reconnaître une question de
+ * prix et à appeler `simulate_pricing`.
+ */
+const PRICE_FAQ_OVERRIDES = [
+  { module: 'home.ts', question: 'How much does Signally cost for 100 employees?' },
+  { module: 'pricing.ts', question: 'How much does Signally cost for 50, 100 or 500 employees?' },
+];
+
+/** Remplace, pour un module donné, la réponse de chaque paire déclarée dans `PRICE_FAQ_OVERRIDES`. */
+function applyPriceOverrides(moduleName, items) {
+  return items.map((item) => {
+    const override = PRICE_FAQ_OVERRIDES.find((entry) => entry.module === moduleName && entry.question === item.q);
+    if (!override) return item;
+    override.matched = true;
+    return { q: item.q, a: PRICE_FAQ_ANSWER };
+  });
+}
+
 // ---------------------------------------------------------------------------
 // Ordres déclarés — la sortie en dépend, ne pas réordonner à la légère
 // ---------------------------------------------------------------------------
@@ -420,9 +459,15 @@ for (const spec of FAQ_FILES) {
   if (routes.has(spec.route)) fail(`route ${spec.route} déclarée deux fois : le libellé de liste blanche serait ambigu`);
   routes.add(spec.route);
 
-  const items = await readFaqItems(spec.module, spec.at);
+  const items = applyPriceOverrides(spec.module, await readFaqItems(spec.module, spec.at));
   pairs += items.length;
   generatedFiles.push({ name: spec.name, contents: renderFaqFile(spec, items) });
+}
+
+for (const override of PRICE_FAQ_OVERRIDES) {
+  if (!override.matched) {
+    fail(`${override.module} : paire tarifaire « ${override.question} » introuvable, PRICE_FAQ_OVERRIDES est obsolète`);
+  }
 }
 
 for (const file of generatedFiles) {
