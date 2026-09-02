@@ -508,6 +508,7 @@ const turnstileSiteKey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY ?? '';
    */
   const VISITOR_KEY = 'signally.chat.visitorId';
   const CONVERSATION_KEY = 'signally.chat.conversationId';
+  const TICKET_KEY = 'signally.chat.conversationTicket';
 
   /**
    * Copies des bornes de `chatRequestSchema`. Elles ne valident pas ce qu'on
@@ -517,6 +518,14 @@ const turnstileSiteKey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY ?? '';
    */
   const VISITOR_PATTERN = /^[A-Za-z0-9_-]{8,64}$/;
   const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+  /**
+   * Volontairement large : le widget ne relit pas la structure du ticket, il
+   * n'écarte qu'une valeur corrompue à la main. C'est la passerelle qui en
+   * juge, et elle seule — dupliquer son format ici créerait une deuxième
+   * définition à tenir alignée pour rien.
+   */
+  const TICKET_PATTERN = /^[A-Za-z0-9_.-]{1,256}$/;
 
   type StorageKind = 'localStorage' | 'sessionStorage';
 
@@ -538,6 +547,14 @@ const turnstileSiteKey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY ?? '';
       window[kind].setItem(key, value);
     } catch {
       // Stockage indisponible : la valeur reste en mémoire pour la page.
+    }
+  }
+
+  function forgetStored(kind: StorageKind, key: string): void {
+    try {
+      window[kind].removeItem(key);
+    } catch {
+      // Stockage indisponible : il n'y avait rien à retirer.
     }
   }
 
@@ -572,6 +589,8 @@ const turnstileSiteKey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY ?? '';
   type ChatAnswer = {
     ok: true;
     conversationId: string;
+    /** Absent d'une passerelle plus ancienne : le tour suivant repasse alors par le défi. */
+    conversationTicket: string | undefined;
     messageId: string;
     answer: string;
     refused: boolean;
@@ -603,6 +622,8 @@ const turnstileSiteKey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY ?? '';
     return {
       ok: true,
       conversationId: raw.conversationId,
+      conversationTicket:
+        typeof raw.conversationTicket === 'string' ? raw.conversationTicket : undefined,
       messageId: raw.messageId,
       answer: raw.answer,
       refused: raw.refused === true,
@@ -702,6 +723,22 @@ const turnstileSiteKey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY ?? '';
         ? storedConversation
         : undefined;
 
+    /**
+     * Le ticket voyage avec le `conversationId` et ne vaut rien sans lui : la
+     * passerelle n'exempte du défi que sur le couple. Rangé dans le même
+     * `sessionStorage`, il a donc exactement la même durée de vie.
+     */
+    const storedTicket = readStored('sessionStorage', TICKET_KEY);
+    let conversationTicket: string | undefined =
+      conversationId !== undefined && storedTicket !== null && TICKET_PATTERN.test(storedTicket)
+        ? storedTicket
+        : undefined;
+
+    const forgetTicket = () => {
+      conversationTicket = undefined;
+      forgetStored('sessionStorage', TICKET_KEY);
+    };
+
     let inFlight = false;
     let lastQuestion = '';
     let errorBlock: HTMLElement | null = null;
@@ -741,6 +778,49 @@ const turnstileSiteKey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY ?? '';
     let turnstileWidget: string | undefined;
     let turnstileRequested = false;
 
+    /**
+     * Attente bornée du jeton, avant un envoi que le ticket ne couvre pas.
+     *
+     * Sans elle, une question tapée vite — ou un Cloudflare lent, le script
+     * n'étant demandé qu'à l'ouverture du panneau — partait sans jeton et se
+     * faisait refuser par la passerelle, avec un message que le visiteur ne
+     * pouvait ni comprendre ni corriger.
+     *
+     * L'attente est bornée, et c'est le point : au-delà on envoie quand même
+     * et la passerelle tranche, exactement comme avant. Un tiers en panne ou
+     * bloqué par une extension ne doit pas figer l'envoi — juste le faire
+     * échouer, ce qu'il faisait déjà. Le visiteur voit l'indicateur d'attente
+     * pendant ce délai : `ask` l'affiche avant d'attendre.
+     */
+    const TURNSTILE_WAIT_MS = 4000;
+
+    let tokenWaiters: Array<() => void> = [];
+
+    /** Le sort du jeton est scellé — arrivé, expiré, en échec : plus rien à attendre. */
+    const releaseTokenWaiters = () => {
+      const waiters = tokenWaiters;
+      tokenWaiters = [];
+      for (const resolve of waiters) resolve();
+    };
+
+    const awaitTurnstileToken = (): Promise<void> =>
+      new Promise<void>((resolve) => {
+        // Jeton déjà là, ou pas de Turnstile du tout : rien à attendre.
+        if (turnstileToken !== null || siteKey === '' || turnstileHost === null) {
+          resolve();
+          return;
+        }
+
+        const done = () => {
+          window.clearTimeout(timer);
+          tokenWaiters = tokenWaiters.filter((waiter) => waiter !== done);
+          resolve();
+        };
+
+        const timer = window.setTimeout(done, TURNSTILE_WAIT_MS);
+        tokenWaiters.push(done);
+      });
+
     const renderTurnstile = () => {
       const api = turnstileApi();
       if (api === undefined || turnstileHost === null) return;
@@ -753,18 +833,22 @@ const turnstileSiteKey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY ?? '';
           appearance: 'interaction-only',
           callback: (token) => {
             turnstileToken = token;
+            releaseTokenWaiters();
           },
           // Un jeton expiré ou un défi en échec ne disent rien au visiteur :
           // on repart sans jeton et la passerelle tranche.
           'expired-callback': () => {
             turnstileToken = null;
+            releaseTokenWaiters();
           },
           'error-callback': () => {
             turnstileToken = null;
+            releaseTokenWaiters();
           },
         });
       } catch {
-        // Turnstile indisponible : l'envoi partira sans jeton.
+        // Turnstile indisponible : l'envoi partira sans jeton, sans attendre.
+        releaseTokenWaiters();
       }
     };
 
@@ -1086,13 +1170,18 @@ const turnstileSiteKey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY ?? '';
         locale: root.dataset.locale ?? 'fr',
       };
 
-      // Absent au premier message : c'est ce qui déclenche le Turnstile.
-      if (conversationId !== undefined) {
-        body.conversationId = conversationId;
-      } else {
-        // Le jeton n'accompagne donc que le premier message, et seulement s'il
-        // y en a un : sans clé publique, ou si Cloudflare n'a rien rendu, on
-        // part sans et la passerelle décide.
+      // Le `conversationId` part même sans son ticket : c'est l'API qui
+      // tranche la propriété en base, et un visiteur dont le ticket a expiré
+      // doit retrouver son historique — il repassera simplement par le défi.
+      if (conversationId !== undefined) body.conversationId = conversationId;
+      if (conversationTicket !== undefined) body.conversationTicket = conversationTicket;
+
+      // Le jeton n'accompagne que les envois que le ticket ne couvre pas :
+      // premier message, ticket perdu, ticket périmé après un refus. Symétrie
+      // exacte de l'attente dans `ask` — et un envoi couvert par le ticket ne
+      // dépense donc aucun jeton. S'il n'y en a pas — pas de clé publique,
+      // Cloudflare muet — on part sans et la passerelle décide, comme avant.
+      if (conversationTicket === undefined) {
         const token = takeTurnstileToken();
         if (token !== undefined) body.turnstileToken = token;
       }
@@ -1117,8 +1206,13 @@ const turnstileSiteKey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY ?? '';
       pendingIndicator.hidden = false;
       scrollToEnd();
 
+      // Tant qu'aucun ticket ne couvre la conversation, la passerelle exigera
+      // un jeton : autant le laisser arriver plutôt que d'envoyer pour rien.
+      if (conversationTicket === undefined) await awaitTurnstileToken();
+
       const body = requestBody(question);
       const spentToken = body.turnstileToken !== undefined;
+      let refusedByGuard = false;
 
       try {
         const response = await fetch('/api/chat', {
@@ -1134,6 +1228,14 @@ const turnstileSiteKey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY ?? '';
           payload = undefined;
         }
 
+        // Le garde a refusé : le ticket qu'on croyait valable ne l'est pas,
+        // et le jeton présenté est brûlé. On oublie l'un et on réarme l'autre
+        // pour que « réessayer » ait une chance d'aboutir.
+        if (response.status === 403) {
+          refusedByGuard = true;
+          forgetTicket();
+        }
+
         const data = readChatResponse(payload);
 
         if (data === undefined) {
@@ -1141,6 +1243,16 @@ const turnstileSiteKey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY ?? '';
         } else if (data.ok) {
           conversationId = data.conversationId;
           writeStored('sessionStorage', CONVERSATION_KEY, data.conversationId);
+
+          // Le ticket du tour suivant. Absent d'une passerelle plus ancienne :
+          // on oublie alors celui qu'on avait plutôt que de le garder périmé.
+          if (data.conversationTicket !== undefined) {
+            conversationTicket = data.conversationTicket;
+            writeStored('sessionStorage', TICKET_KEY, data.conversationTicket);
+          } else {
+            forgetTicket();
+          }
+
           appendAnswer(data);
         } else {
           showError(data.error, data.retryable);
@@ -1156,9 +1268,11 @@ const turnstileSiteKey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY ?? '';
         pendingIndicator.hidden = true;
         scrollToEnd();
 
-        // Le jeton dépensé ne vaut plus rien. Si ce message n'a pas ouvert de
-        // conversation, la tentative suivante en réclamera un neuf.
-        if (spentToken && conversationId === undefined) resetTurnstile();
+        // Un jeton dépensé ne vaut plus rien, et un envoi refusé par le garde
+        // n'a plus de ticket à opposer : dans les deux cas la tentative
+        // suivante a besoin d'un jeton neuf. Avec un ticket en poche, elle
+        // n'en aura pas besoin — et réarmer jetterait un jeton encore intact.
+        if (conversationTicket === undefined && (spentToken || refusedByGuard)) resetTurnstile();
       }
     };
 

@@ -9,6 +9,7 @@ import type { APIRoute } from 'astro';
 import { chatErrorKey, chatRequestSchema, type ChatErrorKey } from '../../lib/chat-schema';
 import { createRateLimiter, clientIp } from '../../lib/rate-limit';
 import { verifyTurnstile } from '../../lib/turnstile';
+import { issueConversationTicket, verifyConversationTicket } from '../../lib/conversation-ticket';
 import { localizeAnswerLinks } from '../../lib/localizeAnswerLinks';
 import { articlesIn } from '../../lib/blog';
 import { getDictionary } from '../../i18n';
@@ -164,15 +165,26 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
     });
   }
 
-  // ---- 3. Turnstile, au seul premier message ----
-  // Les tours suivants sont déjà bornés par le quota journalier du visiteur,
-  // tenu côté API : redemander un défi à chaque question coûterait un appel
-  // réseau de plus sans rien resserrer.
-  if (data.conversationId === undefined) {
+  // ---- 3. Turnstile, sauf conversation déjà prouvée ----
+  // Un `conversationId` ne vaut pas dispense par lui-même : l'API en accepte
+  // n'importe lequel et démarre alors une conversation neuve, si bien qu'un
+  // uuid tiré au hasard suffisait à sauter le défi. Seul un ticket que cette
+  // passerelle a émis pour ce couple (conversation, visiteur) exempte — voir
+  // `conversation-ticket.ts`. Les tours suivants ne coûtent donc toujours
+  // aucun appel à Cloudflare.
+  const proven =
+    data.conversationId !== undefined &&
+    verifyConversationTicket(data.conversationTicket, data.conversationId, data.visitorId);
+
+  if (!proven) {
     const human = await verifyTurnstile(data.turnstileToken, ip);
     if (!human) {
       console.error('[api/chat] Turnstile refusé : requête abandonnée.');
-      return fail(locale, 'generic', 403);
+      // Réessayable : le jeton arrive parfois après l'envoi — Cloudflare lent,
+      // défi interactif, ticket expiré en cours de conversation — et la
+      // seconde tentative aboutit. Le widget reconnaît ce 403 et repart d'un
+      // jeton neuf.
+      return fail(locale, 'generic', 403, { retryable: true });
     }
   }
 
@@ -254,6 +266,9 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
   return json({
     ok: true,
     conversationId: result.conversationId,
+    // Le ticket du tour suivant. Émis ici et nulle part ailleurs : c'est ce
+    // qui fait que la passerelle reconnaît ses propres conversations.
+    conversationTicket: issueConversationTicket(result.conversationId, data.visitorId, secret),
     messageId: result.messageId,
     answer: localizeAnswerLinks(result.answer, locale, slugs),
     refused: result.refused,
