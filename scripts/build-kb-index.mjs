@@ -4,7 +4,7 @@
  *
  * Le corpus vit dans le dépôt API pour que sa construction reste
  * autonome ; ce script est la seule chose qui l'écrit. Il lit le
- * frontmatter des articles français et les dictionnaires `src/i18n/fr`,
+ * frontmatter des articles français et les dictionnaires `src/i18n/en`,
  * puis émet des fichiers markdown compacts et déterministes.
  *
  * Déterminisme : c'est la contrainte dure. Le corpus forme le préfixe
@@ -16,12 +16,15 @@
  * Budget : `API/tools/check-site-kb.php` plafonne chaque fichier à
  * 4096 octets et le corpus entier à 35840. Les 19 articles rédigés à
  * la main en consomment déjà ~20 Ko : voir « Compromis » plus bas pour
- * ce que cela impose.
+ * ce que cela impose. Le script applique ces deux seuils lui-même avant
+ * d'écrire quoi que ce soit sur le disque. `KB_BUDGET_BYTES` surcharge
+ * le budget total pour les tests uniquement : n'affecte aucun prompt ni
+ * aucune sortie générée, seulement le seuil de comparaison.
  *
  * Usage : npm run build:kb-index
  */
 
-import { readdir, readFile, writeFile } from 'node:fs/promises';
+import { readdir, readFile, stat, writeFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import { dirname, join, resolve } from 'node:path';
 
@@ -29,7 +32,24 @@ const HERE = dirname(fileURLToPath(import.meta.url));
 const SITE = resolve(HERE, '..');
 const KB_DIR = resolve(SITE, '../api/src/Resources/site-kb');
 const BLOG_DIR = join(SITE, 'src/content/blog/fr');
-const I18N_DIR = join(SITE, 'src/i18n/fr');
+const I18N_DIR = join(SITE, 'src/i18n/en');
+
+// ---------------------------------------------------------------------------
+// Budget du corpus — miroir des seuils de ../api/tools/check-site-kb.php
+// ---------------------------------------------------------------------------
+
+/** Plafond par fichier, en octets. Doit rester identique à check-site-kb.php. */
+const MAX_FILE_BYTES = 4096;
+
+/** Plafond du corpus entier, en octets. Doit rester identique à check-site-kb.php. */
+const DEFAULT_BUDGET_BYTES = 35840;
+
+/**
+ * Surcharge de test uniquement (voir le gate de la tâche c30, qui force un
+ * dépassement avec `KB_BUDGET_BYTES=1` pour prouver que l'échec fonctionne
+ * vraiment). N'entre dans aucun prompt, ne change aucune sortie générée.
+ */
+const BUDGET_BYTES = process.env.KB_BUDGET_BYTES ? Number(process.env.KB_BUDGET_BYTES) : DEFAULT_BUDGET_BYTES;
 
 // ---------------------------------------------------------------------------
 // Boutons de réglage
@@ -66,6 +86,45 @@ const WORDS_PER_FAQ = 14;
 /** Marqueur de troncature, utilisé seulement si un résumé est coupé au mot. */
 const ELLIPSIS = '…';
 
+/**
+ * Réponse de remplacement pour les paires de FAQ tarifaires. La règle 4 du
+ * prompt site (`API/src/Resources/support-prompt/site.md`) interdit au
+ * modèle d'énoncer un prix qui ne vient pas de l'outil `simulate_pricing` ;
+ * un montant présent ici serait une source que le modèle peut lire et
+ * citer, contournant la règle par sa propre matière première. Une seule
+ * phrase, en anglais, pour toutes les paires concernées : elle renvoie
+ * vers /tarifs et dit que le montant dépend du nombre d'utilisateurs, sans
+ * jamais en citer un. Une seule phrase entière : `trimSentences` conserve
+ * toujours la première phrase en totalité, donc rien n'est perdu à la
+ * troncature quel que soit `WORDS_PER_FAQ`.
+ */
+const PRICE_FAQ_ANSWER =
+  'Pricing is volume-based and depends on how many users the account has, so the exact rate is quoted on /tarifs rather than here, where a calculator turns a user count into a precise monthly price.';
+
+/**
+ * Paires de FAQ dont la réponse est remplacée par `PRICE_FAQ_ANSWER`,
+ * repérées par module + question exacte. Déclaré plutôt que détecté par
+ * une expression régulière sur `€`/`EUR` à l'exécution : une détection
+ * heuristique rendrait la sortie dépendante de la rédaction de la réponse
+ * et casserait la stabilité du préfixe. La question reste inchangée dans
+ * le corpus : c'est elle qui aide le modèle à reconnaître une question de
+ * prix et à appeler `simulate_pricing`.
+ */
+const PRICE_FAQ_OVERRIDES = [
+  { module: 'home.ts', question: 'How much does Signally cost for 100 employees?' },
+  { module: 'pricing.ts', question: 'How much does Signally cost for 50, 100 or 500 employees?' },
+];
+
+/** Remplace, pour un module donné, la réponse de chaque paire déclarée dans `PRICE_FAQ_OVERRIDES`. */
+function applyPriceOverrides(moduleName, items) {
+  return items.map((item) => {
+    const override = PRICE_FAQ_OVERRIDES.find((entry) => entry.module === moduleName && entry.question === item.q);
+    if (!override) return item;
+    override.matched = true;
+    return { q: item.q, a: PRICE_FAQ_ANSWER };
+  });
+}
+
 // ---------------------------------------------------------------------------
 // Ordres déclarés — la sortie en dépend, ne pas réordonner à la légère
 // ---------------------------------------------------------------------------
@@ -92,6 +151,25 @@ const CLUSTER_ORDER = [
  * qui parle à des prospects. Filtre réversible une fois le conseil rendu.
  */
 const EXCLUDED_CLUSTERS = new Set(['Comparatifs & alternatives']);
+
+/**
+ * Intitulé anglais de chaque grappe pour le seul rendu de l'index.
+ *
+ * `CLUSTER_ORDER` doit rester en français : ses valeurs sont comparées
+ * telles quelles au `cluster:` du frontmatter des articles, et un écart
+ * arrête le script. Cette table sépare donc la clé de tri de son
+ * intitulé affiché, pour que le corpus reste entièrement anglais
+ * (invariant : un seul corpus, un seul préfixe mis en cache) sans
+ * toucher aux articles.
+ */
+const CLUSTER_LABELS = {
+  'Créer sa signature': 'Creating your signature',
+  'Microsoft 365 & Outlook': 'Microsoft 365 & Outlook',
+  'Google Workspace & Gmail': 'Google Workspace & Gmail',
+  'Campagnes & bannières': 'Campaigns & banners',
+  'Gestion & gouvernance': 'Management & governance',
+  'RGPD & sécurité': 'GDPR & security',
+};
 
 /**
  * Un fichier par route, jamais deux routes dans un fichier.
@@ -321,7 +399,11 @@ function renderBlogIndex(articles) {
   for (const cluster of CLUSTER_ORDER) {
     const group = articles.filter((article) => article.cluster === cluster);
     if (group.length === 0) continue;
-    lines.push(`## ${cluster}`);
+    // Une grappe ajoutée à CLUSTER_ORDER sans intitulé émettrait « ## undefined »
+    // dans le corpus sans rien signaler : mieux vaut arrêter le script.
+    const label = CLUSTER_LABELS[cluster];
+    if (!label) fail(`grappe « ${cluster} » sans intitulé dans CLUSTER_LABELS`);
+    lines.push(`## ${label}`);
     for (const article of group) {
       const summary = WORDS_PER_ARTICLE > 0 ? trimWords(article.summary.join(' '), WORDS_PER_ARTICLE) : '';
       lines.push(summary === '' ? `- /blog/${article.slug}` : `- /blog/${article.slug} — ${summary}`);
@@ -353,17 +435,23 @@ function fail(message) {
   process.exit(1);
 }
 
-const articles = await readArticles();
+const GENERATED_NAMES = new Set(['900-blog-index.md', ...FAQ_FILES.map((spec) => spec.name)]);
 
-const written = [];
-
-async function emit(name, contents) {
-  const bytes = Buffer.byteLength(contents, 'utf8');
-  await writeFile(join(KB_DIR, name), contents, 'utf8');
-  written.push({ name, bytes });
+/** Octets déjà sur le disque pour les fichiers du corpus que ce script ne régénère pas. */
+async function readManualBytes() {
+  const entries = await readdir(KB_DIR);
+  const manual = [];
+  for (const name of entries) {
+    if (!name.endsWith('.md') || GENERATED_NAMES.has(name)) continue;
+    const stats = await stat(join(KB_DIR, name));
+    manual.push({ name, bytes: stats.size });
+  }
+  return manual;
 }
 
-await emit('900-blog-index.md', renderBlogIndex(articles));
+const articles = await readArticles();
+
+const generatedFiles = [{ name: '900-blog-index.md', contents: renderBlogIndex(articles) }];
 
 let pairs = 0;
 const routes = new Set();
@@ -371,14 +459,44 @@ for (const spec of FAQ_FILES) {
   if (routes.has(spec.route)) fail(`route ${spec.route} déclarée deux fois : le libellé de liste blanche serait ambigu`);
   routes.add(spec.route);
 
-  const items = await readFaqItems(spec.module, spec.at);
+  const items = applyPriceOverrides(spec.module, await readFaqItems(spec.module, spec.at));
   pairs += items.length;
-  await emit(spec.name, renderFaqFile(spec, items));
+  generatedFiles.push({ name: spec.name, contents: renderFaqFile(spec, items) });
 }
 
-const total = written.reduce((sum, file) => sum + file.bytes, 0);
-for (const file of written) {
+for (const override of PRICE_FAQ_OVERRIDES) {
+  if (!override.matched) {
+    fail(`${override.module} : paire tarifaire « ${override.question} » introuvable, PRICE_FAQ_OVERRIDES est obsolète`);
+  }
+}
+
+for (const file of generatedFiles) {
+  file.bytes = Buffer.byteLength(file.contents, 'utf8');
+  if (file.bytes > MAX_FILE_BYTES) {
+    fail(`${file.name} dépasse le plafond de ${MAX_FILE_BYTES} o par fichier de ${file.bytes - MAX_FILE_BYTES} o (fait ${file.bytes} o)`);
+  }
+}
+
+// Vérifie le budget total du corpus avant d'écrire quoi que ce soit : un run
+// qui dépasse ne doit laisser aucun fichier modifié sur le disque. L'ordre
+// alphabétique reproduit le glob() trié de check-site-kb.php ; le premier
+// fichier dont le cumul dépasse le budget est celui qu'on nomme.
+const manualFiles = await readManualBytes();
+const allFiles = [...manualFiles, ...generatedFiles].sort((a, b) => (a.name < b.name ? -1 : a.name > b.name ? 1 : 0));
+
+let runningTotal = 0;
+for (const file of allFiles) {
+  runningTotal += file.bytes;
+  if (runningTotal > BUDGET_BYTES) {
+    fail(`${file.name} porte le total du corpus à ${runningTotal} o, dépassement de ${runningTotal - BUDGET_BYTES} o sur le budget de ${BUDGET_BYTES} o`);
+  }
+}
+
+for (const file of generatedFiles) {
+  await writeFile(join(KB_DIR, file.name), file.contents, 'utf8');
   console.log(`  ${file.name}  ${file.bytes} o`);
 }
-console.log(`\n${articles.length} articles, ${pairs} paires de FAQ, ${total} o générés dans ${KB_DIR}`);
-console.log('Vérifiez le budget : php ../api/tools/check-site-kb.php');
+
+const generatedBytes = generatedFiles.reduce((sum, file) => sum + file.bytes, 0);
+console.log(`\n${articles.length} articles, ${pairs} paires de FAQ, ${generatedBytes} o générés dans ${KB_DIR}`);
+console.log(`Budget respecté : ${runningTotal} / ${BUDGET_BYTES} o utilisés sur le corpus entier.`);

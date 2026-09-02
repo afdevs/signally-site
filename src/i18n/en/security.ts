@@ -62,6 +62,11 @@ export const security = {
       text:
         'Export of your templates and complete deletion of your workspace on request, with no hidden retention.',
     },
+    {
+      title: 'Public website assistant',
+      text:
+        'This paragraph covers the assistant on this public website, which is separate from the signature service described above. The conversations you hold with it are kept for 90 days, then purged. On the first message of a conversation, an anti-bot check operated by Cloudflare (Turnstile) runs and processes your IP address for that sole purpose. No account is required and no name-based identifier is asked of you.',
+    },
   ],
 
   todo:

@@ -98,4 +98,36 @@ export const common = {
     text:
       'Create your signature online, free and without a credit card. Rolling it out to the whole company takes only a few minutes more.',
   },
+
+  supportChat: {
+    launcher: 'Open the Signally assistant',
+    title: 'Signally assistant',
+    placeholder: 'Ask your question…',
+    send: 'Send',
+    starters: [
+      'How does pricing work?',
+      'Is my data hosted in the EU?',
+      'How do I roll out signatures to the whole team?',
+    ],
+    footer: 'Answers are generated automatically — verify anything critical.',
+    unanswered:
+      "I don't have a reliable answer to that. Contact us from the dedicated page for personalized help.",
+    feedback: {
+      up: 'Helpful',
+      down: 'Not helpful',
+      thanks: 'Thanks for your feedback.',
+    },
+    errors: {
+      rateLimit: 'Too many messages sent. Try again in a few minutes.',
+      dailyLimit:
+        "You've reached your message quota for today. Come back tomorrow.",
+      tooLong:
+        'Your message is too long (2000 characters max). Shorten it and try again.',
+      unavailable: 'The assistant is temporarily unavailable. Try again later.',
+      generic: 'Something went wrong. Try again in a moment.',
+    },
+    actions: {
+      retry: 'Try again',
+    },
+  },
 } satisfies Common;

@@ -101,6 +101,38 @@ export const common = {
     text:
       "Créez votre signature en ligne, gratuitement et sans carte bancaire. Le déploiement à toute l'entreprise ne prend que quelques minutes de plus.",
   },
+
+  supportChat: {
+    launcher: "Ouvrir l'assistant Signally",
+    title: 'Assistant Signally',
+    placeholder: 'Posez votre question…',
+    send: 'Envoyer',
+    starters: [
+      'Comment fonctionne la tarification ?',
+      'Mes données sont-elles hébergées en France ?',
+      "Comment déployer les signatures à toute l'équipe ?",
+    ],
+    footer: 'Réponses générées automatiquement, à vérifier en cas de doute.',
+    unanswered:
+      "Je n'ai pas de réponse fiable à cette question. Contactez-nous depuis la page dédiée pour un accompagnement personnalisé.",
+    feedback: {
+      up: 'Utile',
+      down: 'Pas utile',
+      thanks: 'Merci pour votre retour.',
+    },
+    errors: {
+      rateLimit: 'Trop de messages envoyés. Réessayez dans quelques minutes.',
+      dailyLimit:
+        "Vous avez atteint votre quota de messages pour aujourd'hui. Revenez demain.",
+      tooLong:
+        'Votre message est trop long (2000 caractères maximum). Raccourcissez-le et réessayez.',
+      unavailable: "L'assistant est momentanément indisponible. Réessayez plus tard.",
+      generic: 'Une erreur est survenue. Réessayez dans un instant.',
+    },
+    actions: {
+      retry: 'Réessayer',
+    },
+  },
 };
 
 export type Common = typeof common;

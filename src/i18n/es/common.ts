@@ -98,4 +98,35 @@ export const common = {
     text:
       'Crea tu firma en línea, gratis y sin tarjeta de crédito. Desplegarla en toda la empresa solo lleva unos minutos más.',
   },
+
+  supportChat: {
+    launcher: 'Abrir el asistente de Signally',
+    title: 'Asistente Signally',
+    placeholder: 'Escribe tu pregunta…',
+    send: 'Enviar',
+    starters: [
+      '¿Cómo funcionan los precios?',
+      '¿Mis datos están alojados en la UE?',
+      '¿Cómo despliego las firmas a todo el equipo?',
+    ],
+    footer: 'Respuestas generadas automáticamente: verifica lo importante.',
+    unanswered:
+      'No tengo una respuesta fiable para esto. Contáctanos desde la página dedicada para recibir ayuda personalizada.',
+    feedback: {
+      up: 'Útil',
+      down: 'No útil',
+      thanks: 'Gracias por tu opinión.',
+    },
+    errors: {
+      rateLimit: 'Demasiados mensajes enviados. Inténtalo de nuevo en unos minutos.',
+      dailyLimit: 'Has alcanzado tu cuota de mensajes de hoy. Vuelve mañana.',
+      tooLong:
+        'Tu mensaje es demasiado largo (2000 caracteres como máximo). Acórtalo e inténtalo de nuevo.',
+      unavailable: 'El asistente no está disponible en este momento. Inténtalo más tarde.',
+      generic: 'Ha ocurrido un error. Inténtalo de nuevo en un momento.',
+    },
+    actions: {
+      retry: 'Reintentar',
+    },
+  },
 } satisfies Common;

@@ -71,7 +71,7 @@ export const pricing = {
     items: [
       {
         q: 'Combien coûte Signally pour 50, 100 ou 500 collaborateurs ?',
-        a: "Le tarif est dégressif : 1,25 € HT par utilisateur et par mois jusqu'à 50 utilisateurs, 1,00 € jusqu'à 100, 0,75 € jusqu'à 500 et 0,50 € au-delà. Soit 62,50 € par mois pour 50 collaborateurs, 100 € pour 100 et 375 € pour 500. Le simulateur ci-dessus calcule votre montant exact.",
+        a: "Le tarif est dégressif : 1,50 € HT par utilisateur et par mois jusqu'à 10 utilisateurs, 1,25 € jusqu'à 50, 1,00 € jusqu'à 100, 0,75 € jusqu'à 500 et 0,50 € au-delà. Soit 62,50 € par mois pour 50 collaborateurs, 100 € pour 100 et 375 € pour 500. Le simulateur ci-dessus calcule votre montant exact.",
       },
       {
         q: 'Toutes les fonctionnalités sont-elles incluses ?',

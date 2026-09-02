@@ -61,7 +61,7 @@ export const pricing = {
     items: [
       {
         q: 'How much does Signally cost for 50, 100 or 500 employees?',
-        a: 'Pricing decreases with volume: €1.25 excl. VAT per user per month up to 50 users, €1.00 up to 100, €0.75 up to 500 and €0.50 beyond. That is €62.50 per month for 50 employees, €100 for 100 and €375 for 500. The calculator above works out your exact figure.',
+        a: 'Pricing decreases with volume: €1.50 excl. VAT per user per month up to 10 users, €1.25 up to 50, €1.00 up to 100, €0.75 up to 500 and €0.50 beyond. That is €62.50 per month for 50 employees, €100 for 100 and €375 for 500. The calculator above works out your exact figure.',
       },
       {
         q: 'Are all features included?',

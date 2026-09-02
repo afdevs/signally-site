@@ -62,6 +62,11 @@ export const security = {
       text:
         'Exportación de tus plantillas y supresión completa de tu espacio a petición, sin retención oculta.',
     },
+    {
+      title: 'Asistente del sitio público',
+      text:
+        'Este párrafo se refiere al asistente de este sitio público, distinto del servicio de firmas descrito más arriba. Las conversaciones que mantienes en él se conservan 90 días y después se purgan. En el primer mensaje de una conversación se ejecuta un control antirrobot operado por Cloudflare (Turnstile), que trata tu dirección IP con esa única finalidad. No se requiere ninguna cuenta ni se te pide ningún identificador nominativo.',
+    },
   ],
 
   todo:
