@@ -58,6 +58,14 @@ système et son registre d'outils. Le navigateur ne parle qu'à sa propre origin
 `src/pages/api/chat.ts` et `chat-feedback.ts` sont les seules à appeler l'API, en
 serveur-à-serveur avec l'en-tête `X-Signally-Site-Key`.
 
+**Invariant : un `conversationId` ne dispense pas du défi Turnstile.** L'API
+démarre délibérément une conversation neuve pour un `conversationId` inconnu
+plutôt que de révéler l'existence d'un uuid, si bien qu'un uuid tiré au hasard
+suffisait à sauter le défi. Seul le `conversationTicket` que la passerelle a
+elle-même signé pour ce couple (conversation, visiteur) exempte :
+`src/lib/conversation-ticket.ts`. Ce champ appartient au site et ne fait pas
+partie du contrat de l'API.
+
 **Invariant : aucune valeur par requête n'entre dans un prompt système.** Le
 cache d'Anthropic est une correspondance d'octets sur le préfixe outils →
 système → messages ; une valeur variable — langue, visiteur, date, chemin — le

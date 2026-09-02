@@ -23,14 +23,23 @@ export const chatRequestSchema = z.object({
    */
   visitorId: z.string().regex(/^[A-Za-z0-9_-]{8,64}$/),
 
-  /** Absent = premier message de la conversation. C'est ce qui déclenche le Turnstile. */
+  /** Absent = premier message de la conversation. */
   conversationId: z.string().uuid().optional(),
+
+  /**
+   * Preuve que le `conversationId` a bien été émis par la passerelle pour ce
+   * visiteur, renvoyée avec la réponse précédente. C'est ce ticket, et non la
+   * seule présence d'un `conversationId`, qui exempte du défi Turnstile : voir
+   * `src/lib/conversation-ticket.ts` pour la raison. Champ propre au site, il
+   * ne fait pas partie du contrat de l'API et ne lui est jamais transmis.
+   */
+  conversationTicket: z.string().max(256).optional(),
 
   locale: z.enum(LOCALES).optional(),
 
   pageKey: z.string().max(64).optional(),
 
-  /** Jeton Turnstile, présent au seul premier message. */
+  /** Jeton Turnstile, présent dès que le ticket ne couvre pas la requête. */
   turnstileToken: z.string().optional(),
 });
 
