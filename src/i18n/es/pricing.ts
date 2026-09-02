@@ -61,7 +61,7 @@ export const pricing = {
     items: [
       {
         q: '¿Cuánto cuesta Signally para 50, 100 o 500 empleados?',
-        a: 'El precio es decreciente: 1,25 € sin IVA por usuario y mes hasta 50 usuarios, 1,00 € hasta 100, 0,75 € hasta 500 y 0,50 € a partir de ahí. Es decir, 62,50 € al mes para 50 empleados, 100 € para 100 y 375 € para 500. El simulador de arriba calcula tu importe exacto.',
+        a: 'El precio es decreciente: 1,50 € sin IVA por usuario y mes hasta 10 usuarios, 1,25 € hasta 50, 1,00 € hasta 100, 0,75 € hasta 500 y 0,50 € a partir de ahí. Es decir, 62,50 € al mes para 50 empleados, 100 € para 100 y 375 € para 500. El simulador de arriba calcula tu importe exacto.',
       },
       {
         q: '¿Están incluidas todas las funciones?',
