@@ -68,6 +68,14 @@ export const common = {
       label: 'Google Workspace y Gmail',
       desc: 'Instalación en todo el dominio',
     },
+    terms: {
+      label: 'Términos de servicio',
+      desc: 'Las reglas de acceso y uso del servicio',
+    },
+    privacy: {
+      label: 'Política de privacidad',
+      desc: 'Datos recopilados, plazos y derechos',
+    },
   },
 
   nav: {

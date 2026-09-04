@@ -23,6 +23,8 @@ export const PAGE_KEYS = [
   'blog',
   'microsoft',
   'google',
+  'terms',
+  'privacy',
 ] as const;
 
 export type PageKey = (typeof PAGE_KEYS)[number];
@@ -87,6 +89,16 @@ const PATHS: Record<PageKey, Record<Locale, string>> = {
     fr: '/integrations/google-workspace-gmail',
     en: '/integrations/google-workspace-gmail',
     es: '/integraciones/google-workspace-gmail',
+  },
+  terms: {
+    fr: '/conditions-utilisation',
+    en: '/terms-of-service',
+    es: '/terminos-de-servicio',
+  },
+  privacy: {
+    fr: '/politique-confidentialite',
+    en: '/privacy-policy',
+    es: '/politica-de-privacidad',
   },
 };
 
