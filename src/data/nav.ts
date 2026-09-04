@@ -114,6 +114,8 @@ export function footerColumns(locale: Locale): { title: string; items: NavLink[]
       title: common.footer.columns.company,
       items: [
         link('contact'),
+        link('terms'),
+        link('privacy'),
         { label: common.actions.login, href: APP_LOGIN_URL, external: true },
       ],
     },

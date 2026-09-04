@@ -1,0 +1,142 @@
+---
+/**
+ * Corps commun aux documents juridiques : conditions d'utilisation et
+ * politique de confidentialité partagent le même gabarit, seule la clé de
+ * dictionnaire change.
+ *
+ * Colonne de texte étroite plutôt que la grille des pages marketing : un
+ * document juridique se lit en continu, et la longueur de ligne prime sur
+ * l'occupation de l'écran.
+ */
+
+import Base from '../layouts/Base.astro';
+import PageHero from '../components/PageHero.astro';
+import { getDictionary } from '../i18n';
+import type { Locale } from '../i18n/config';
+import { localizedPath } from '../i18n/routes';
+
+/** Forme commune aux deux documents : c'est elle qui autorise le gabarit unique. */
+type LegalDoc = {
+  meta: { title: string; description: string };
+  hero: { eyebrow: string; title: string; lede: string };
+  updated: { label: string; value: string };
+  sections: readonly { title: string; paragraphs: readonly string[] }[];
+  todo: string;
+  contact: { title: string; text: string; label: string };
+};
+
+interface Props {
+  locale: Locale;
+  doc: 'terms' | 'privacy';
+}
+
+const { locale, doc } = Astro.props;
+const dictionary = getDictionary(locale);
+const t: LegalDoc = doc === 'terms' ? dictionary.terms : dictionary.privacy;
+---
+
+<Base
+  title={t.meta.title}
+  description={t.meta.description}
+  path={localizedPath(doc, locale)}
+  locale={locale}
+>
+  <PageHero eyebrow={t.hero.eyebrow} title={t.hero.title} lede={t.hero.lede} />
+
+  <section class="section section--white">
+    <div class="container">
+      <div class="legal">
+        <p class="legal__updated">
+          {t.updated.label} — <time>{t.updated.value}</time>
+        </p>
+
+        {t.sections.map((section) => (
+          <article class="legal__section">
+            <h2 class="legal__title">{section.title}</h2>
+            {section.paragraphs.map((paragraph) => <p class="legal__text">{paragraph}</p>)}
+          </article>
+        ))}
+
+        {/*
+          TODO — Signally : mêmes réserves que la page Sécurité. Un texte
+          qui engage juridiquement ne s'invente pas ici.
+        */}
+        <div class="todo">{t.todo}</div>
+
+        <aside class="legal__contact">
+          <h2 class="legal__contact-title">{t.contact.title}</h2>
+          <p class="legal__text">{t.contact.text}</p>
+          <a class="legal__contact-link" href={localizedPath('contact', locale)}>
+            {t.contact.label}
+          </a>
+        </aside>
+      </div>
+    </div>
+  </section>
+</Base>
+
+<style>
+  .legal {
+    max-width: 760px;
+    margin: 0 auto;
+  }
+
+  .legal__updated {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    letter-spacing: 0.06em;
+    color: var(--muted);
+    margin: 0 0 40px;
+  }
+
+  .legal__section {
+    margin-bottom: 36px;
+  }
+
+  .legal__title {
+    font-size: 19px;
+    line-height: 1.35;
+    margin: 0 0 12px;
+  }
+
+  .legal__text {
+    font-size: 15.5px;
+    line-height: 1.7;
+    color: var(--ink-2);
+    margin: 0 0 12px;
+  }
+  .legal__text:last-child { margin-bottom: 0; }
+
+  .todo {
+    margin: 40px 0;
+    border: 1px dashed var(--brand-stronger);
+    border-radius: var(--r-lg);
+    padding: 20px 24px;
+    background: var(--brand-surface);
+    font-size: 14px;
+    line-height: 1.6;
+    color: var(--ink-4);
+  }
+
+  .legal__contact {
+    border-top: 1px solid var(--line);
+    padding-top: 32px;
+  }
+
+  .legal__contact-title {
+    font-size: 19px;
+    margin: 0 0 12px;
+  }
+
+  .legal__contact-link {
+    display: inline-block;
+    margin-top: 8px;
+    font-size: 15px;
+    font-weight: 600;
+  }
+
+  @media (max-width: 560px) {
+    .legal__section { margin-bottom: 28px; }
+    .legal__title { font-size: 17.5px; }
+  }
+</style>

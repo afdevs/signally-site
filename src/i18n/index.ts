@@ -43,6 +43,12 @@ import { contact as esContact } from './es/contact';
 import { blog as frBlog } from './fr/blog';
 import { blog as enBlog } from './en/blog';
 import { blog as esBlog } from './es/blog';
+import { terms as frTerms } from './fr/terms';
+import { privacy as frPrivacy } from './fr/privacy';
+import { privacy as enPrivacy } from './en/privacy';
+import { privacy as esPrivacy } from './es/privacy';
+import { terms as enTerms } from './en/terms';
+import { terms as esTerms } from './es/terms';
 import { notFound as frNotFound } from './fr/notFound';
 import { notFound as enNotFound } from './en/notFound';
 import { notFound as esNotFound } from './es/notFound';
@@ -63,6 +69,8 @@ export type Dictionary = {
   contact: typeof frContact;
   notFound: typeof frNotFound;
   blog: typeof frBlog;
+  terms: typeof frTerms;
+  privacy: typeof frPrivacy;
 };
 
 const DICTIONARIES: Record<Locale, Dictionary> = {
@@ -70,16 +78,19 @@ const DICTIONARIES: Record<Locale, Dictionary> = {
     common: frCommon, seo: frSeo, home: frHome, pricing: frPricing, features: frFeatures,
     campaigns: frCampaigns, useCases: frUseCases, security: frSecurity, compare: frCompare,
     integrations: frIntegrations, contact: frContact, notFound: frNotFound, blog: frBlog,
+    terms: frTerms, privacy: frPrivacy,
   },
   en: {
     common: enCommon, seo: enSeo, home: enHome, pricing: enPricing, features: enFeatures,
     campaigns: enCampaigns, useCases: enUseCases, security: enSecurity, compare: enCompare,
     integrations: enIntegrations, contact: enContact, notFound: enNotFound, blog: enBlog,
+    terms: enTerms, privacy: enPrivacy,
   },
   es: {
     common: esCommon, seo: esSeo, home: esHome, pricing: esPricing, features: esFeatures,
     campaigns: esCampaigns, useCases: esUseCases, security: esSecurity, compare: esCompare,
     integrations: esIntegrations, contact: esContact, notFound: esNotFound, blog: esBlog,
+    terms: esTerms, privacy: esPrivacy,
   },
 };
 
